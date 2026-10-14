@@ -35,10 +35,10 @@ export default function Layout() {
         <div className="topbar-inner">
           <span className="brand">{settings?.shop_name || "Workshop Billing"}</span>
           <nav className="nav">
+            <NavLink to="/complaints/new">New complaint</NavLink>
             <NavLink to="/" end>
               New bill
             </NavLink>
-            <NavLink to="/complaints/new">New complaint</NavLink>
             <NavLink to="/bills">Find bills</NavLink>
             {me.me.role === "owner" && <NavLink to="/settings">Settings</NavLink>}
             <button type="button" className="link-button" onClick={signOut}>
