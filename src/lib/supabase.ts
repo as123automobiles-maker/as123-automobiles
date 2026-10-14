@@ -14,14 +14,16 @@ export const supabase = createClient(url ?? "http://localhost", anonKey ?? "miss
   auth: { persistSession: true, autoRefreshToken: true },
 });
 
-/** Pings Supabase Auth to confirm the URL and key are valid. */
-export async function checkConnection(): Promise<string | null> {
-  if (configError) return configError;
-  try {
-    const res = await fetch(`${url}/auth/v1/health`, { headers: { apikey: anonKey! } });
-    if (res.ok) return null;
-    return `Supabase responded with ${res.status}. Check the URL and anon key in .env.`;
-  } catch {
-    return "Could not reach Supabase. Check the URL in .env and your internet connection.";
-  }
+/** Turns Supabase/Postgres errors into short, readable messages. */
+export function errorMessage(err: unknown): string {
+  if (!err) return "Something went wrong.";
+  const e = err as { message?: string; code?: string };
+  if (e.message?.includes("Failed to fetch")) return "Network error. Check your internet connection and try again.";
+  if (e.message === "Invalid login credentials") return "Wrong email or password.";
+  // Messages raised by save_bill() are already written for staff.
+  if (e.code === "22023" || e.code === "P0002" || e.code === "42501") return e.message || "Something went wrong.";
+  if (e.code === "23514") return "Some details are not valid. Check the highlighted fields and try again.";
+  if (e.code === "PGRST202" || e.code === "PGRST205")
+    return "The database isn't set up yet. Run the SQL in supabase/migrations (see README).";
+  return e.message || "Something went wrong.";
 }

@@ -1,19 +1,64 @@
-import { useEffect, useState } from "react";
-import { checkConnection } from "./lib/supabase";
+import { createBrowserRouter, Link, RouterProvider } from "react-router";
+import Layout from "./components/Layout";
+import { AuthProvider, RequireAuth } from "./lib/auth";
+import { ShopSettingsProvider } from "./lib/shopSettings";
+import { configError } from "./lib/supabase";
+import BillSearch from "./pages/BillSearch";
+import BillView from "./pages/BillView";
+import EditBill from "./pages/EditBill";
+import Login from "./pages/Login";
+import NewBill from "./pages/NewBill";
+import Settings from "./pages/Settings";
+
+function NotFound() {
+  return (
+    <main className="container empty">
+      <h1>Page not found</h1>
+      <Link to="/" className="btn btn-primary">
+        Go to New bill
+      </Link>
+    </main>
+  );
+}
+
+// A data router is needed for useBlocker (the unsaved-bill warning).
+const router = createBrowserRouter(
+  [
+    { path: "/login", element: <Login /> },
+    {
+      element: (
+        <RequireAuth>
+          <ShopSettingsProvider>
+            <Layout />
+          </ShopSettingsProvider>
+        </RequireAuth>
+      ),
+      children: [
+        { index: true, element: <NewBill /> },
+        { path: "bills", element: <BillSearch /> },
+        { path: "bills/:id", element: <BillView /> },
+        { path: "bills/:id/edit", element: <EditBill /> },
+        { path: "settings", element: <Settings /> },
+      ],
+    },
+    { path: "*", element: <NotFound /> },
+  ],
+  { basename: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" },
+);
 
 export default function App() {
-  const [status, setStatus] = useState<"checking" | "ok" | string>("checking");
-
-  useEffect(() => {
-    checkConnection().then((err) => setStatus(err ?? "ok"));
-  }, []);
-
+  if (configError) {
+    return (
+      <main className="container">
+        <div className="alert alert-error" role="alert">
+          <strong>Setup needed.</strong> {configError}
+        </div>
+      </main>
+    );
+  }
   return (
-    <main style={{ fontFamily: "system-ui, sans-serif", maxWidth: 560, margin: "48px auto", padding: "0 16px" }}>
-      <h1>AS123 Automobiles Billing</h1>
-      {status === "checking" && <p>Checking Supabase connection…</p>}
-      {status === "ok" && <p style={{ color: "green" }}>✓ Connected to Supabase</p>}
-      {status !== "checking" && status !== "ok" && <p style={{ color: "crimson" }}>✗ {status}</p>}
-    </main>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
 }
