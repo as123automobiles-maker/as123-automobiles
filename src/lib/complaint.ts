@@ -29,7 +29,7 @@ export interface ComplaintPayload {
   vehicle_reg: string;
   description: string;
   reported_on: string;
-  attended_by: string | null;
+  attended_by: string;
   notes: string | null;
   status: ComplaintStatus;
 }
@@ -46,7 +46,8 @@ export function validateComplaint(d: ComplaintDraft): { errors: FieldErrors; pay
   else if (d.reportedOn > todayISO()) errors.reportedOn = "The reported date can't be in the future.";
 
   const attendedBy = d.attendedBy.trim();
-  if (attendedBy.length > 100) errors.attendedBy = "Too long (100 characters max).";
+  if (!attendedBy) errors.attendedBy = "Enter the staff member who attended the customer.";
+  else if (attendedBy.length > 100) errors.attendedBy = "Too long (100 characters max).";
 
   const notes = d.notes.trim();
   if (notes.length > 1000) errors.notes = "Notes are too long (1000 characters max).";
@@ -59,7 +60,7 @@ export function validateComplaint(d: ComplaintDraft): { errors: FieldErrors; pay
       address: customer.address || null,
       description,
       reported_on: d.reportedOn,
-      attended_by: attendedBy || null,
+      attended_by: attendedBy,
       notes: notes || null,
       status: d.status,
     },

@@ -72,7 +72,20 @@ git push -u origin main
 
 On every push and pull request, GitHub Actions (`.github/workflows/ci.yml`) runs the type check, the tests and the build.
 
-## 4. Deploy (Vercel)
+## 4. Deploy (Netlify, recommended)
+
+The app is a static website (HTML, CSS, JavaScript) that talks to Supabase. Node.js is only needed to *build* it; the host runs the build for you.
+
+1. Sign in at [netlify.com](https://app.netlify.com) with GitHub.
+2. Click **Add new site → Import an existing project → GitHub**, allow access, and pick this repository.
+3. Set the build settings: **Build command** `npm run build`, **Publish directory** `dist`.
+4. Under **Environment variables**, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Use the same values as your `.env`; never use the service_role key.
+5. Click **Deploy**. When it finishes, rename the site under **Site configuration → Change site name** (e.g. `your-workshop.netlify.app`).
+6. In Supabase, open **Authentication → URL Configuration** and set **Site URL** to that address.
+
+Every push to `main` redeploys automatically. `public/_redirects` makes page links such as `/bills/…` work after a refresh. Netlify's free plan allows commercial use. Cloudflare Pages works the same way, with the same build command, output folder and variables.
+
+## Deploy (Vercel, alternative)
 
 1. Sign in at [vercel.com](https://vercel.com) with GitHub and click **Add New → Project**. Import the repository.
 2. Vercel detects Vite automatically. Under **Environment Variables**, add:

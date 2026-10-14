@@ -110,7 +110,7 @@ export default function ComplaintForm({
               onChange={(e) => set({ reportedOn: e.target.value })}
             />
           </Field>
-          <Field fieldKey="attendedBy" label="Attended by" error={shown.attendedBy}>
+          <Field fieldKey="attendedBy" label="Attended by" required error={shown.attendedBy}>
             <input
               {...fieldProps("attendedBy", shown.attendedBy)}
               type="text"

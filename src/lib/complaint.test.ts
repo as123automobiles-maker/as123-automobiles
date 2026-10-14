@@ -17,8 +17,8 @@ function filled(overrides: Partial<ComplaintDraft> = {}): ComplaintDraft {
 }
 
 describe("validateComplaint", () => {
-  it("builds the payload; representative and notes are optional", () => {
-    const { errors, payload } = validateComplaint(filled({ attendedBy: "  ", notes: "" }));
+  it("builds the payload; notes are optional", () => {
+    const { errors, payload } = validateComplaint(filled({ attendedBy: " Ravi ", notes: "" }));
     expect(errors).toEqual({});
     expect(payload).toEqual({
       customer_name: "Thomas",
@@ -27,19 +27,21 @@ describe("validateComplaint", () => {
       vehicle_reg: "KL 39 W 0890",
       description: "Brake noise when stopping",
       reported_on: "2026-10-14",
-      attended_by: null,
+      attended_by: "Ravi",
       notes: null,
       status: "open",
     });
   });
 
-  it("keeps the representative when given", () => {
-    expect(validateComplaint(filled()).payload?.attended_by).toBe("Ravi");
+  it("requires the staff member who attended", () => {
+    const r = validateComplaint(filled({ attendedBy: "  " }));
+    expect(r.errors.attendedBy).toBe("Enter the staff member who attended the customer.");
+    expect(r.payload).toBeNull();
   });
 
-  it("requires customer, vehicle and a description", () => {
+  it("requires customer, vehicle, a description and who attended", () => {
     const r = validateComplaint(emptyComplaint());
-    expect(Object.keys(r.errors).sort()).toEqual(["customerName", "description", "phone", "vehicleReg"]);
+    expect(Object.keys(r.errors).sort()).toEqual(["attendedBy", "customerName", "description", "phone", "vehicleReg"]);
     expect(r.payload).toBeNull();
   });
 
