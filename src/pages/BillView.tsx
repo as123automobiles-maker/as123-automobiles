@@ -68,6 +68,7 @@ export default function BillView() {
       )}
 
       <article className="card bill-doc">
+        <p className="doc-title">Invoice</p>
         <header className="bill-head">
           <div>
             <h1 className="shop-name">{settings?.shop_name || "Workshop"}</h1>

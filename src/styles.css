@@ -983,6 +983,15 @@ textarea[aria-invalid="true"],
   padding: 20px;
 }
 
+.doc-title {
+  margin: 0 0 14px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
 .bill-head {
   display: flex;
   flex-wrap: wrap;
