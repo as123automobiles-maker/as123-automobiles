@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { SaveBillPayload } from "./bill";
 import type { ComplaintPayload } from "./complaint";
+import type { SaleRow } from "./sales";
 import { supabase } from "./supabase";
 import type {
 
@@ -195,4 +196,24 @@ export function removeStaff(userId: string) {
 
 export function resetStaffPassword(userId: string, password: string) {
   return manageStaff({ action: "reset_password", user_id: userId, password });
+}
+
+/** Bills received between two dates (inclusive), with just the amounts reports need. */
+export async function salesForRange(from: string, to: string): Promise<SaleRow[]> {
+  const PAGE = 1000;
+  const rows: SaleRow[] = [];
+  // The API returns at most 1000 rows per request, so fetch page by page.
+  for (let start = 0; ; start += PAGE) {
+    const { data, error } = await supabase
+      .from("bills")
+      .select("date_received, items_subtotal, labour_charge, painting_charge, washing_charge, grand_total")
+      .gte("date_received", from)
+      .lte("date_received", to)
+      .order("date_received")
+      .order("id")
+      .range(start, start + PAGE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as SaleRow[]));
+    if (!data || data.length < PAGE) return rows;
+  }
 }

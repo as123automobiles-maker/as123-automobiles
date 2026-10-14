@@ -1375,3 +1375,279 @@ h3 {
   margin: -6px 0 14px 32px;
   font-size: 0.85rem;
 }
+
+/* ---------- Sales ---------- */
+
+.sales-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 18px;
+}
+
+.sales-head h1 {
+  margin: 0;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: #e3e8f1;
+}
+
+.segmented button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 8px 14px;
+  min-height: 38px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: #fff;
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.card-head h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-head h2::before {
+  content: "";
+  width: 4px;
+  height: 1.1em;
+  border-radius: 4px;
+  background: linear-gradient(var(--primary), #6c8cff);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepper input {
+  width: auto;
+  min-height: 38px;
+  padding: 6px 10px;
+}
+
+.stepper .btn {
+  min-width: 38px;
+  padding: 0;
+  font-size: 1.2rem;
+}
+
+.overview-date {
+  margin: 6px 0 12px;
+  font-weight: 600;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fbfcfe;
+}
+
+.tile-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tile-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.tile-strong {
+  background: linear-gradient(120deg, #0f1f4b, #2350d8);
+  border-color: transparent;
+  color: #fff;
+}
+
+.tile-strong .tile-label,
+.tile-strong .tile-sub {
+  color: #c9d5f2;
+}
+
+.month-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 12px 0 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.month-facts b {
+  color: var(--text);
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chart-legend span,
+.chart-tip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-legend i,
+.chart-tip i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.chart-scroll {
+  overflow-x: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+.chart-wrap {
+  position: relative;
+}
+
+.chart-wrap svg {
+  display: block;
+}
+
+.chart-grid {
+  stroke: #e6eaf1;
+  stroke-width: 1;
+}
+
+.chart-baseline {
+  stroke: #9aa5b8;
+  stroke-width: 1;
+}
+
+.chart-axis {
+  font-size: 11px;
+  fill: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-axis-sel {
+  fill: var(--text);
+  font-weight: 700;
+}
+
+.chart-hover {
+  fill: #eef2f8;
+}
+
+.chart-sel {
+  fill: #e3eafc;
+}
+
+.chart-tip {
+  position: absolute;
+  top: 0;
+  transform: translate(-50%, -4px);
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.sales-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.sales-table th,
+.sales-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.sales-table th {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sales-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-table tbody tr {
+  cursor: pointer;
+}
+
+.sales-table tbody tr:hover {
+  background: #f6f8fc;
+}
+
+.sales-table .row-selected {
+  background: #e3eafc;
+}
+
+.sales-table tfoot td {
+  font-weight: 800;
+  border-top: 2px solid var(--text);
+  border-bottom: 0;
+}

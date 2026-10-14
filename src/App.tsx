@@ -10,6 +10,7 @@ import { ComplaintView, EditComplaint, NewComplaint } from "./pages/ComplaintPag
 import EditBill from "./pages/EditBill";
 import Login from "./pages/Login";
 import NewBill from "./pages/NewBill";
+import Sales from "./pages/Sales";
 import Settings from "./pages/Settings";
 import VehicleHistory from "./pages/VehicleHistory";
 
@@ -47,6 +48,7 @@ const router = createBrowserRouter(
         { path: "complaints/:id", element: <ComplaintView /> },
         { path: "complaints/:id/edit", element: <EditComplaint /> },
         { path: "vehicles/:key", element: <VehicleHistory /> },
+        { path: "sales", element: <Sales /> },
         { path: "settings", element: <Settings /> },
       ],
     },
