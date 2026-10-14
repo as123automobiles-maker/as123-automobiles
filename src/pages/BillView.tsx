@@ -5,6 +5,7 @@ import { formatDate } from "../lib/format";
 import { formatINR, rupeesToPaise } from "../lib/money";
 import { useShopSettings } from "../lib/shopSettings";
 import { useBill } from "../lib/useBill";
+import { whatsappLink } from "../lib/whatsapp";
 
 const inr = (rupees: number) => formatINR(rupeesToPaise(rupees));
 
@@ -27,6 +28,7 @@ export default function BillView() {
 
   const bill = state.bill;
   const items = [...bill.bill_items].sort((a, b) => a.position - b.position);
+  const whatsapp = whatsappLink(bill, settings);
 
   return (
     <div className="bill-page">
@@ -38,11 +40,21 @@ export default function BillView() {
           <Link to={`/bills/${bill.id}/edit`} className="btn btn-outline">
             Edit
           </Link>
-          <button type="button" className="btn btn-primary" onClick={() => window.print()}>
+          <button type="button" className="btn btn-outline" onClick={() => window.print()}>
             Print / Save PDF
           </button>
+          {whatsapp && (
+            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp">
+              Send on WhatsApp
+            </a>
+          )}
         </div>
       </div>
+      {!whatsapp && (
+        <p className="hint no-print">
+          WhatsApp isn't available for this bill because the phone number ({bill.phone}) isn't a valid mobile number.
+        </p>
+      )}
 
       {justSaved && (
         <div className="alert alert-success no-print" role="status">

@@ -5,6 +5,7 @@ A simple, mobile-friendly web app for an automobile workshop to create, save, se
 - **New bill:** customer and vehicle details, any number of parts or work items (free text and price), a required labour charge, and optional painting and washing. Totals update as you type.
 - **Find bills:** one search box that matches customer name, phone number or vehicle number. Opening a result shows the full bill.
 - **Print / Save PDF:** a clean printable bill with your workshop's name, address and phone.
+- **Send on WhatsApp:** opens WhatsApp (the app on phones, WhatsApp Web on computers) with the customer's number and the bill summary filled in. Staff only press Send. 10-digit numbers are treated as Indian (+91). No WhatsApp Business account is needed.
 - **Unsaved-bill protection:** the app warns before you leave a bill you haven't saved. An unfinished new bill is also kept on the device and restored the next time you open **New bill**.
 
 Built with React, TypeScript, Vite and Supabase (Postgres plus Auth).
