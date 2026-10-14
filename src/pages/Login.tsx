@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useLocation } from "react-router";
+import Logo from "../components/Logo";
 import { useAuth } from "../lib/auth";
 import { errorMessage, supabase } from "../lib/supabase";
 
@@ -33,8 +34,11 @@ export default function Login() {
   return (
     <main className="login">
       <form className="card login-card" onSubmit={onSubmit} noValidate>
-        <h1>Workshop Billing</h1>
-        <p className="hint">Sign in to create and find bills.</p>
+        <div className="login-brand">
+          <Logo size={52} />
+          <h1>Workshop Billing</h1>
+          <p className="hint">Sign in to create and find bills.</p>
+        </div>
         {error && (
           <div className="alert alert-error" role="alert">
             {error}

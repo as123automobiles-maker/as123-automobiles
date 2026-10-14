@@ -2,6 +2,7 @@ import { NavLink, Outlet } from "react-router";
 import { useShopSettings } from "../lib/shopSettings";
 import { useMe } from "../lib/staff";
 import { supabase } from "../lib/supabase";
+import Logo from "./Logo";
 
 export default function Layout() {
   const { settings, error } = useShopSettings();
@@ -13,7 +14,10 @@ export default function Layout() {
     return (
       <main className="login">
         <div className="card login-card">
-          <h1>Workshop Billing</h1>
+          <div className="login-brand">
+            <Logo size={48} />
+            <h1>Workshop Billing</h1>
+          </div>
           {me.status === "not-staff" ? (
             <p>Your login isn't on the workshop's staff list yet. Ask the owner to add you in Settings.</p>
           ) : (
@@ -33,7 +37,10 @@ export default function Layout() {
     <div className="app">
       <header className="topbar no-print">
         <div className="topbar-inner">
-          <span className="brand">{settings?.shop_name || "Workshop Billing"}</span>
+          <NavLink to="/bills" className="brand">
+            <Logo size={30} />
+            <span>{settings?.shop_name || "Workshop Billing"}</span>
+          </NavLink>
           <nav className="nav">
             <NavLink to="/complaints/new">New complaint</NavLink>
             <NavLink to="/" end>
