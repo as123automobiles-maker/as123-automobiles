@@ -72,7 +72,18 @@ git push -u origin main
 
 On every push and pull request, GitHub Actions (`.github/workflows/ci.yml`) runs the type check, the tests and the build.
 
-## 4. Deploy (Netlify, recommended)
+## 4. Deploy (GitHub Pages)
+
+`.github/workflows/pages.yml` builds the app and publishes it on every push to `main`. The site is at `https://<user>.github.io/<repo>/`.
+
+1. **Settings → Pages → Build and deployment → Source:** choose **GitHub Actions**. Don't use "Deploy from a branch": that publishes the unbuilt source code and shows a blank page.
+2. **Settings → Secrets and variables → Actions:**
+   - **Variables** tab → `VITE_SUPABASE_URL` = your Project URL
+   - **Secrets** tab → `VITE_SUPABASE_ANON_KEY` = the publishable/anon key (never the service_role key)
+3. **Actions → Deploy to GitHub Pages → Run workflow**, or push a commit.
+4. In Supabase, open **Authentication → URL Configuration** and set **Site URL** to the Pages address.
+
+## Deploy (Netlify, alternative)
 
 The app is a static website (HTML, CSS, JavaScript) that talks to Supabase. Node.js is only needed to *build* it; the host runs the build for you.
 
