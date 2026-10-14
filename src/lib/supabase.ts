@@ -8,10 +8,69 @@ export const configError =
     ? "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Fill in .env with your project's public values, then restart the dev server."
     : null;
 
+// "Remember me": the sign-in is kept in localStorage (survives closing the
+// browser) when ticked, otherwise in sessionStorage (ends with the browser session).
+const REMEMBER_KEY = "workshop-billing:remember";
+const EMAIL_KEY = "workshop-billing:email";
+
+export function isRemembered(): boolean {
+  try {
+    return localStorage.getItem(REMEMBER_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+/** Call before signing in. Also saves or forgets the email used to sign in. */
+export function setRememberMe(remember: boolean, email: string) {
+  try {
+    localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+    if (remember) localStorage.setItem(EMAIL_KEY, email);
+    else localStorage.removeItem(EMAIL_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function rememberedEmail(): string {
+  try {
+    return localStorage.getItem(EMAIL_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export const sessionStore = {
+  getItem(key: string) {
+    try {
+      return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem(key: string, value: string) {
+    try {
+      const [keep, drop] = isRemembered() ? [localStorage, sessionStorage] : [sessionStorage, localStorage];
+      keep.setItem(key, value);
+      drop.removeItem(key);
+    } catch {
+      /* storage unavailable */
+    }
+  },
+  removeItem(key: string) {
+    try {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    } catch {
+      /* storage unavailable */
+    }
+  },
+};
+
 // Only the public (anon / publishable) key is used in the browser.
 // All authorization is enforced by Row Level Security.
 export const supabase = createClient(url ?? "http://localhost", anonKey ?? "missing", {
-  auth: { persistSession: true, autoRefreshToken: true },
+  auth: { persistSession: true, autoRefreshToken: true, storage: sessionStore },
 });
 
 /** Turns Supabase/Postgres errors into short, readable messages. */

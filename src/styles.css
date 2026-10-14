@@ -1365,3 +1365,13 @@ h3 {
     text-decoration: none;
   }
 }
+
+.remember {
+  margin-top: -2px;
+  font-weight: 500;
+}
+
+.remember-hint {
+  margin: -6px 0 14px 32px;
+  font-size: 0.85rem;
+}
