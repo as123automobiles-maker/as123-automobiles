@@ -1,11 +1,33 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Field, fieldProps } from "../components/fields";
+import StaffSection from "../components/StaffSection";
 import { updateShopSettings } from "../lib/api";
 import { useShopSettings } from "../lib/shopSettings";
+import { useIsOwner, useMe } from "../lib/staff";
 import { errorMessage } from "../lib/supabase";
 import type { ShopSettings } from "../lib/types";
 
 export default function Settings() {
+  const me = useMe();
+  const isOwner = useIsOwner();
+  if (me.status === "loading") return <p className="page-status">Loading…</p>;
+  if (!isOwner)
+    return (
+      <div className="empty">
+        <h1>Settings</h1>
+        <p>Only the workshop owner can change settings and manage logins.</p>
+      </div>
+    );
+  return (
+    <div>
+      <h1>Settings</h1>
+      <ShopDetailsForm />
+      <StaffSection />
+    </div>
+  );
+}
+
+function ShopDetailsForm() {
   const { settings, reload } = useShopSettings();
   const [form, setForm] = useState<ShopSettings | null>(settings);
   const [nameError, setNameError] = useState<string | undefined>();
@@ -51,8 +73,7 @@ export default function Settings() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate>
-      <h1>Settings</h1>
+    <form className="settings-form" onSubmit={onSubmit} noValidate>
       <section className="card">
         <h2>Workshop details</h2>
         <p className="hint">Printed at the top of every bill.</p>

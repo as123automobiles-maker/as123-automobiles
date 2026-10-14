@@ -30,6 +30,16 @@ export interface BillWithItems extends BillRow {
   bill_items: BillItemRow[];
 }
 
+export type StaffRole = "owner" | "staff";
+
+export interface StaffMember {
+  user_id: string;
+  email: string;
+  full_name: string;
+  role: StaffRole;
+  created_at: string;
+}
+
 export interface ShopSettings {
   shop_name: string;
   address: string | null;

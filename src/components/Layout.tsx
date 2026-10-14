@@ -1,9 +1,33 @@
 import { NavLink, Outlet } from "react-router";
 import { useShopSettings } from "../lib/shopSettings";
+import { useMe } from "../lib/staff";
 import { supabase } from "../lib/supabase";
 
 export default function Layout() {
   const { settings, error } = useShopSettings();
+  const me = useMe();
+  const signOut = () => void supabase.auth.signOut();
+
+  if (me.status === "loading") return <p className="page-status">Loading…</p>;
+  if (me.status !== "ok") {
+    return (
+      <main className="login">
+        <div className="card login-card">
+          <h1>Workshop Billing</h1>
+          {me.status === "not-staff" ? (
+            <p>Your login isn't on the workshop's staff list yet. Ask the owner to add you in Settings.</p>
+          ) : (
+            <div className="alert alert-error" role="alert">
+              Couldn't check your login. {me.message}
+            </div>
+          )}
+          <button type="button" className="btn btn-outline btn-block" onClick={signOut}>
+            Sign out
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="app">
@@ -15,8 +39,8 @@ export default function Layout() {
               New bill
             </NavLink>
             <NavLink to="/bills">Find bills</NavLink>
-            <NavLink to="/settings">Settings</NavLink>
-            <button type="button" className="link-button" onClick={() => void supabase.auth.signOut()}>
+            {me.me.role === "owner" && <NavLink to="/settings">Settings</NavLink>}
+            <button type="button" className="link-button" onClick={signOut}>
               Sign out
             </button>
           </nav>

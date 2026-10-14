@@ -760,6 +760,91 @@ textarea[aria-invalid="true"],
   font-size: 0.9rem;
 }
 
+/* ---------- Settings & staff ---------- */
+
+.settings-form {
+  margin-bottom: 24px;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 0 0 10px;
+}
+
+.label-like {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.staff-list {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.staff-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.staff-info {
+  min-width: 0;
+}
+
+.staff-email {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.staff-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #eceff3;
+  color: var(--muted);
+  vertical-align: 2px;
+}
+
+.badge-owner {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.staff-add {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.password-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-danger {
+  background: #fff;
+  color: var(--danger);
+  border-color: #f3b8b2;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
 /* ---------- Login ---------- */
 
 .login {

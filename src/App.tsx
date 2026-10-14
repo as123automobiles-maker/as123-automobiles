@@ -2,6 +2,7 @@ import { createBrowserRouter, Link, RouterProvider } from "react-router";
 import Layout from "./components/Layout";
 import { AuthProvider, RequireAuth } from "./lib/auth";
 import { ShopSettingsProvider } from "./lib/shopSettings";
+import { MeProvider } from "./lib/staff";
 import { configError } from "./lib/supabase";
 import BillSearch from "./pages/BillSearch";
 import BillView from "./pages/BillView";
@@ -28,9 +29,11 @@ const router = createBrowserRouter(
     {
       element: (
         <RequireAuth>
-          <ShopSettingsProvider>
-            <Layout />
-          </ShopSettingsProvider>
+          <MeProvider>
+            <ShopSettingsProvider>
+              <Layout />
+            </ShopSettingsProvider>
+          </MeProvider>
         </RequireAuth>
       ),
       children: [
