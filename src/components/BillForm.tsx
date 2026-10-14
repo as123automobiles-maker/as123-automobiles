@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
-import { Link, useBlocker, useNavigate } from "react-router";
+import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router";
 import { saveBill } from "../lib/api";
 import {
   computeTotals,
@@ -14,8 +14,10 @@ import {
 import { formatINR } from "../lib/money";
 import { useShopSettings } from "../lib/shopSettings";
 import { errorMessage } from "../lib/supabase";
-import ConfirmDialog from "./ConfirmDialog";
+import { useUnsavedGuard } from "../lib/useUnsavedGuard";
+import ComplaintPicker from "./ComplaintPicker";
 import { Field, FieldError, MoneyInput, fieldProps } from "./fields";
+import CustomerInputs from "./CustomerInputs";
 
 interface Props {
   initial: BillDraft;
@@ -32,10 +34,10 @@ interface Props {
 /** Error keys in the order the fields appear on screen, so we can focus the first problem. */
 function firstErrorKey(errors: BillErrors, d: BillDraft): string | null {
   const order = [
+    "vehicleReg",
     "customerName",
     "phone",
     "address",
-    "vehicleReg",
     "dateReceived",
     "expectedPickup",
     ...d.items.flatMap((i) => [`item-${i.key}-description`, `item-${i.key}-price`]),
@@ -57,7 +59,6 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [focusKey, setFocusKey] = useState<string | null>(null);
-  const leaving = useRef(false);
 
   const dirty = JSON.stringify(draft) !== baseline;
   const totals = computeTotals(draft);
@@ -76,20 +77,12 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
     setFocusKey(null);
   }, [focusKey]);
 
-  // Guard against losing an unsaved bill: in-app navigation and closing/reloading the tab.
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      dirty && !leaving.current && currentLocation.pathname !== nextLocation.pathname,
+  const guard = useUnsavedGuard(
+    dirty,
+    billId
+      ? "Your changes to this bill have not been saved and will be lost."
+      : "This bill has not been saved yet. It will be kept as a draft on this device until you come back to New bill.",
   );
-  useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
 
   function set<K extends keyof BillDraft>(key: K, value: BillDraft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -138,7 +131,7 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
     setSaving(true);
     try {
       const id = await saveBill(payload, billId);
-      leaving.current = true;
+      guard.allowLeave();
       onSaved?.();
       navigate(`/bills/${id}`, { state: { saved: true } });
     } catch (err) {
@@ -167,47 +160,7 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
       <section className="card">
         <h2>Customer & vehicle</h2>
         <div className="grid">
-          <Field fieldKey="customerName" label="Customer name" required error={shown.customerName}>
-            <input
-              {...fieldProps("customerName", shown.customerName)}
-              type="text"
-              autoComplete="off"
-              autoCapitalize="words"
-              value={draft.customerName}
-              onChange={(e) => set("customerName", e.target.value)}
-            />
-          </Field>
-          <Field fieldKey="phone" label="Phone number" required error={shown.phone}>
-            <input
-              {...fieldProps("phone", shown.phone)}
-              type="tel"
-              inputMode="tel"
-              autoComplete="off"
-              placeholder="98765 43210"
-              value={draft.phone}
-              onChange={(e) => set("phone", e.target.value)}
-            />
-          </Field>
-          <Field fieldKey="address" label="Address" error={shown.address} className="span-2">
-            <textarea
-              {...fieldProps("address", shown.address)}
-              rows={2}
-              value={draft.address}
-              onChange={(e) => set("address", e.target.value)}
-            />
-          </Field>
-          <Field fieldKey="vehicleReg" label="Vehicle registration number" required error={shown.vehicleReg}>
-            <input
-              {...fieldProps("vehicleReg", shown.vehicleReg)}
-              type="text"
-              className="uppercase"
-              autoComplete="off"
-              autoCapitalize="characters"
-              placeholder="KA 01 AB 1234"
-              value={draft.vehicleReg}
-              onChange={(e) => set("vehicleReg", e.target.value)}
-            />
-          </Field>
+          <CustomerInputs value={draft} errors={shown} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
           <div className="grid-2">
             <Field fieldKey="dateReceived" label="Date received" required error={shown.dateReceived}>
               <input
@@ -229,6 +182,13 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
           </div>
         </div>
       </section>
+
+      <ComplaintPicker
+        customer={draft}
+        selected={draft.complaintIds}
+        onChange={(ids) => set("complaintIds", ids)}
+        billId={billId}
+      />
 
       <section className="card">
         <h2>Parts & work done</h2>
@@ -395,20 +355,7 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
         </div>
       </div>
 
-      {blocker.state === "blocked" && (
-        <ConfirmDialog
-          title="Leave without saving?"
-          message={
-            billId
-              ? "Your changes to this bill have not been saved and will be lost."
-              : "This bill has not been saved yet. It will be kept as a draft on this device until you come back to New bill."
-          }
-          cancelLabel="Stay and finish"
-          confirmLabel="Leave"
-          onCancel={() => blocker.reset()}
-          onConfirm={() => blocker.proceed()}
-        />
-      )}
+      {guard.dialog}
     </form>
   );
 }

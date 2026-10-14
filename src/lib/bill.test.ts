@@ -82,7 +82,13 @@ describe("validateBill", () => {
         { description: "Brake pads", price: "1250.00" },
         { description: "Engine oil 3L", price: "899.50" },
       ],
+      complaintIds: [],
     });
+  });
+
+  it("passes linked complaints through without duplicates, and doesn't require any", () => {
+    expect(validateBill(filled({ complaintIds: ["c1", "c2", "c1"] }), strict).payload?.complaintIds).toEqual(["c1", "c2"]);
+    expect(validateBill(filled({ complaintIds: [] }), strict).errors).toEqual({});
   });
 
   it("requires a labour charge", () => {
@@ -133,6 +139,7 @@ describe("billToDraft", () => {
       address: null,
       phone: "9876543210",
       vehicle_reg: "KA01AB1234",
+      vehicle_reg_key: "KA01AB1234",
       date_received: "2026-10-14",
       expected_pickup: null,
       labour_charge: 600,
@@ -143,11 +150,13 @@ describe("billToDraft", () => {
       created_at: "",
       updated_at: "",
       bill_items: [{ id: "x", bill_id: "b1", position: 0, description: "Brake pads", price: 1250 }],
+      complaints: [{ id: "c1", complaint_number: 3, description: "Brake noise", status: "open", attended_by: null, reported_on: "2026-10-14" }],
     };
     const d = billToDraft(saved);
     expect(d.items.map((i) => [i.description, i.price])).toEqual([["Brake pads", "1250"]]);
     expect(d.washing).toEqual({ selected: true, amount: "250.50" });
     expect(d.painting.selected).toBe(false);
+    expect(d.complaintIds).toEqual(["c1"]);
     expect(computeTotals(d).grandTotal).toBe(210050);
   });
 });

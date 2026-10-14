@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import BillForm from "../components/BillForm";
 import { emptyBill, isBlankItem, type BillDraft } from "../lib/bill";
 
@@ -16,6 +17,7 @@ function hasContent(d: BillDraft): boolean {
       d.labour.trim() ||
       d.painting.selected ||
       d.washing.selected ||
+      d.complaintIds?.length ||
       d.items.some((i) => !isBlankItem(i)),
   );
 }
@@ -31,6 +33,8 @@ function loadDraft(): BillDraft | null {
       d.items.every((i) => typeof i.key === "string" && typeof i.description === "string" && typeof i.price === "string") &&
       typeof d.painting?.selected === "boolean" &&
       typeof d.washing?.selected === "boolean";
+    // Drafts saved before complaints were added have no complaintIds.
+    if (looksValid && !Array.isArray(d.complaintIds)) d.complaintIds = [];
     return looksValid && hasContent(d) ? d : null;
   } catch {
     return null;
@@ -45,11 +49,24 @@ function clearDraft() {
   }
 }
 
+/** Details passed in when starting a bill from a complaint or a vehicle's history. */
+export type BillPrefill = Partial<Pick<BillDraft, "customerName" | "phone" | "address" | "vehicleReg" | "complaintIds">>;
+
 export default function NewBill() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [prefill] = useState(() => (location.state as { prefill?: BillPrefill } | null)?.prefill ?? null);
+
   const [start, setStart] = useState(() => {
     const draft = loadDraft();
-    return { draft: draft ?? emptyBill(), restored: draft !== null, key: 0 };
+    if (draft) return { draft, restored: true, key: 0 };
+    return { draft: { ...emptyBill(), ...prefill }, restored: false, key: 0 };
   });
+
+  // Don't apply the prefill again if the page is reloaded.
+  useEffect(() => {
+    if (prefill) navigate(location.pathname, { replace: true, state: null });
+  }, [prefill, navigate, location.pathname]);
 
   const saveDraft = useCallback((d: BillDraft) => {
     try {
@@ -62,14 +79,18 @@ export default function NewBill() {
 
   function startFresh() {
     clearDraft();
-    setStart((s) => ({ draft: emptyBill(), restored: false, key: s.key + 1 }));
+    setStart((s) => ({ draft: { ...emptyBill(), ...prefill }, restored: false, key: s.key + 1 }));
   }
 
   const banner = start.restored ? (
     <div className="alert alert-info">
       <span>We restored a bill you hadn't saved yet.</span>
       <button type="button" className="link-button" onClick={startFresh}>
-        Discard it and start a new bill
+        {prefill?.complaintIds?.length
+          ? "Discard it and start the bill for the selected complaint"
+          : prefill
+            ? `Discard it and start a bill for ${prefill.vehicleReg}`
+            : "Discard it and start a new bill"}
       </button>
     </div>
   ) : null;

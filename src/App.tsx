@@ -6,10 +6,12 @@ import { MeProvider } from "./lib/staff";
 import { configError } from "./lib/supabase";
 import BillSearch from "./pages/BillSearch";
 import BillView from "./pages/BillView";
+import { ComplaintView, EditComplaint, NewComplaint } from "./pages/ComplaintPages";
 import EditBill from "./pages/EditBill";
 import Login from "./pages/Login";
 import NewBill from "./pages/NewBill";
 import Settings from "./pages/Settings";
+import VehicleHistory from "./pages/VehicleHistory";
 
 function NotFound() {
   return (
@@ -41,6 +43,10 @@ const router = createBrowserRouter(
         { path: "bills", element: <BillSearch /> },
         { path: "bills/:id", element: <BillView /> },
         { path: "bills/:id/edit", element: <EditBill /> },
+        { path: "complaints/new", element: <NewComplaint /> },
+        { path: "complaints/:id", element: <ComplaintView /> },
+        { path: "complaints/:id/edit", element: <EditComplaint /> },
+        { path: "vehicles/:key", element: <VehicleHistory /> },
         { path: "settings", element: <Settings /> },
       ],
     },

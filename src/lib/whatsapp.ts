@@ -30,6 +30,12 @@ export function billMessage(bill: BillWithItems, shop: ShopSettings | null): str
   ];
   if (bill.expected_pickup) lines.push(`Expected pickup: ${formatDate(bill.expected_pickup)}`);
   lines.push("");
+  const complaints = [...(bill.complaints ?? [])].sort((a, b) => a.complaint_number - b.complaint_number);
+  if (complaints.length > 0) {
+    lines.push("*Your complaints*");
+    complaints.forEach((c) => lines.push(`- ${c.description}`));
+    lines.push("");
+  }
   if (items.length > 0) {
     lines.push("*Parts & work*");
     items.forEach((item, i) => lines.push(`${i + 1}. ${item.description}: ${inr(item.price)}`));

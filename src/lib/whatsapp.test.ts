@@ -9,6 +9,8 @@ const bill: BillWithItems = {
   address: null,
   phone: "98765 43210",
   vehicle_reg: "KA 01 AB 1234",
+  vehicle_reg_key: "KA01AB1234",
+  complaints: [],
   date_received: "2026-10-14",
   expected_pickup: null,
   labour_charge: 600,

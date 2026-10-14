@@ -1,5 +1,8 @@
+import { ISO_DATE, todayISO, validateCustomer, type CustomerFields } from "./customer";
 import { paiseToDecimal, paiseToInput, parseAmount, rupeesToPaise, type ParsedAmount } from "./money";
 import type { BillWithItems } from "./types";
+
+export { normalizeVehicleReg, todayISO } from "./customer";
 
 export interface ItemDraft {
   key: string;
@@ -13,17 +16,15 @@ export interface OptionalService {
 }
 
 /** The bill form's state, exactly as typed. */
-export interface BillDraft {
-  customerName: string;
-  address: string;
-  phone: string;
-  vehicleReg: string;
+export interface BillDraft extends CustomerFields {
   dateReceived: string;
   expectedPickup: string;
   items: ItemDraft[];
   labour: string;
   painting: OptionalService;
   washing: OptionalService;
+  /** Complaints (for the same vehicle) this bill addresses. Optional. */
+  complaintIds: string[];
 }
 
 let keySeq = 0;
@@ -32,14 +33,9 @@ export function newItem(description = "", price = ""): ItemDraft {
   return { key: `i${Date.now().toString(36)}${keySeq}`, description, price };
 }
 
-/** Today's date in the browser's time zone, as yyyy-mm-dd. */
-export function todayISO(now = new Date()): string {
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 10);
-}
-
 export function emptyBill(): BillDraft {
   return {
+    complaintIds: [],
     customerName: "",
     address: "",
     phone: "",
@@ -93,6 +89,7 @@ export interface SaveBillPayload {
     washing_charge: string | null;
   };
   items: { description: string; price: string }[];
+  complaintIds: string[];
 }
 
 /**
@@ -101,10 +98,6 @@ export interface SaveBillPayload {
  */
 export type BillErrors = Record<string, string>;
 
-export function normalizeVehicleReg(raw: string): string {
-  return raw.trim().toUpperCase().replace(/\s+/g, " ");
-}
-
 function amountMessage(p: ParsedAmount, label: string): string | null {
   if (p.ok) return null;
   if (p.reason === "empty") return `Enter the ${label}.`;
@@ -112,31 +105,13 @@ function amountMessage(p: ParsedAmount, label: string): string | null {
   return `Enter the ${label} as a number, e.g. 450 or 450.50.`;
 }
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 /** Checks every field. Returns the payload only when there are no errors. */
 export function validateBill(
   d: BillDraft,
   opts: { allowZeroLabour: boolean },
 ): { errors: BillErrors; payload: SaveBillPayload | null } {
   const errors: BillErrors = {};
-
-  const name = d.customerName.trim();
-  if (!name) errors.customerName = "Enter the customer's name.";
-  else if (name.length > 100) errors.customerName = "Name is too long (100 characters max).";
-
-  if (d.address.trim().length > 300) errors.address = "Address is too long (300 characters max).";
-
-  const phoneDigits = d.phone.replace(/\D/g, "");
-  if (!d.phone.trim()) errors.phone = "Enter the phone number.";
-  else if (!/^[+\d\s()-]+$/.test(d.phone.trim()) || phoneDigits.length < 10 || phoneDigits.length > 13)
-    errors.phone = "Enter a valid phone number with at least 10 digits.";
-
-  const reg = normalizeVehicleReg(d.vehicleReg);
-  const regChars = reg.replace(/[^A-Z0-9]/g, "");
-  if (!reg) errors.vehicleReg = "Enter the vehicle registration number.";
-  else if (!/^[A-Z0-9 -]+$/.test(reg) || regChars.length < 4 || reg.length > 20)
-    errors.vehicleReg = "Enter a valid registration number, e.g. KA 01 AB 1234.";
+  const customer = validateCustomer(d, errors);
 
   if (!ISO_DATE.test(d.dateReceived)) errors.dateReceived = "Choose the date the vehicle was received.";
   if (d.expectedPickup && !ISO_DATE.test(d.expectedPickup)) errors.expectedPickup = "Choose a valid pickup date.";
@@ -179,10 +154,7 @@ export function validateBill(
     errors,
     payload: {
       bill: {
-        customer_name: name,
-        address: d.address.trim(),
-        phone: d.phone.trim(),
-        vehicle_reg: reg,
+        ...customer,
         date_received: d.dateReceived,
         expected_pickup: d.expectedPickup || null,
         labour_charge: paiseToDecimal(labour.paise),
@@ -190,6 +162,7 @@ export function validateBill(
         washing_charge: washing,
       },
       items,
+      complaintIds: [...new Set(d.complaintIds)],
     },
   };
 }
@@ -216,5 +189,6 @@ export function billToDraft(bill: BillWithItems): BillDraft {
       selected: bill.washing_charge !== null,
       amount: bill.washing_charge !== null ? paiseToInput(rupeesToPaise(bill.washing_charge)) : "",
     },
+    complaintIds: (bill.complaints ?? []).map((c) => c.id),
   };
 }

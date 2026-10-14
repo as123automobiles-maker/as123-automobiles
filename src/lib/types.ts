@@ -26,8 +26,49 @@ export interface BillItemRow {
   price: number;
 }
 
+export type ComplaintStatus = "open" | "resolved";
+
+export interface ComplaintRow {
+  id: string;
+  complaint_number: number;
+  customer_name: string;
+  address: string | null;
+  phone: string;
+  vehicle_reg: string;
+  vehicle_reg_key: string;
+  description: string;
+  reported_on: string;
+  attended_by: string | null;
+  notes: string | null;
+  status: ComplaintStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A complaint as shown next to a bill. */
+export type ComplaintSummary = Pick<
+  ComplaintRow,
+  "id" | "complaint_number" | "description" | "status" | "attended_by" | "reported_on"
+>;
+
+/** A bill as shown next to a complaint. */
+export type BillSummary = Pick<BillRow, "id" | "bill_number" | "date_received" | "grand_total">;
+
+/** A bill with the complaints it addresses (from search and vehicle history). */
+export interface BillWithComplaints extends BillRow {
+  vehicle_reg_key: string;
+  complaints: ComplaintSummary[];
+}
+
+/** A complaint with the bills that address it. */
+export interface ComplaintWithBills extends ComplaintRow {
+  bills: BillSummary[];
+}
+
 export interface BillWithItems extends BillRow {
+  vehicle_reg_key: string;
   bill_items: BillItemRow[];
+  complaints: ComplaintSummary[];
 }
 
 export type StaffRole = "owner" | "staff";

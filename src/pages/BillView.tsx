@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { StatusBadge } from "../components/cards";
 import { BillNotFound, LoadError } from "../components/states";
 import { formatDate } from "../lib/format";
 import { formatINR, rupeesToPaise } from "../lib/money";
@@ -29,12 +30,13 @@ export default function BillView() {
   const bill = state.bill;
   const items = [...bill.bill_items].sort((a, b) => a.position - b.position);
   const whatsapp = whatsappLink(bill, settings);
+  const complaints = [...(bill.complaints ?? [])].sort((a, b) => a.complaint_number - b.complaint_number);
 
   return (
     <div className="bill-page">
       <div className="toolbar no-print">
-        <Link to="/bills" className="back-link">
-          ← Find bills
+        <Link to={`/vehicles/${bill.vehicle_reg_key}`} className="back-link">
+          ← History for {bill.vehicle_reg}
         </Link>
         <div className="toolbar-actions">
           <Link to={`/bills/${bill.id}/edit`} className="btn btn-outline">
@@ -99,6 +101,32 @@ export default function BillView() {
             </div>
           )}
         </dl>
+
+        {complaints.length > 0 ? (
+          <div className="bill-complaints">
+            <h2>Complaints addressed</h2>
+            <ul>
+              {complaints.map((c) => (
+                <li key={c.id}>
+                  <Link to={`/complaints/${c.id}`} className="complaint-ref">
+                    #{c.complaint_number}
+                  </Link>{" "}
+                  {c.description}
+                  <span className="muted">
+                    {" "}
+                    · reported {formatDate(c.reported_on)}
+                    {c.attended_by && ` · attended by ${c.attended_by}`}
+                  </span>{" "}
+                  <span className="no-print">
+                    <StatusBadge status={c.status} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="muted no-print">This bill is not linked to a complaint.</p>
+        )}
 
         <table className="bill-items">
           <thead>

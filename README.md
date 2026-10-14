@@ -3,7 +3,10 @@
 A simple, mobile-friendly web app for an automobile workshop to create, save, search and print customer repair bills.
 
 - **New bill:** customer and vehicle details, any number of parts or work items (free text and price), a required labour charge, and optional painting and washing. Totals update as you type.
-- **Find bills:** one search box that matches customer name, phone number or vehicle number. Opening a result shows the full bill.
+- **Complaints:** record what the customer reports (free text), the date, who attended them, notes, and status (Open / Resolved). Enter the vehicle number first; if the vehicle has been seen before, the app offers to fill in the customer's details.
+- **Bills ↔ complaints:** when creating or editing a bill, tick which of that vehicle's complaints the work addresses. This is optional, and a bill can address several complaints. A complaint can also have several bills.
+- **Find bills:** one search box that matches customer name, phone number or vehicle number. It shows matching bills (with the complaints each addresses), matching complaints (with who attended and their bills), and shortcuts to each vehicle's history.
+- **Vehicle history:** complaints and bills for one vehicle, together in date order. Filters show **complaints without a bill** and **bills without a complaint**.
 - **Print / Save PDF:** a clean printable bill with your workshop's name, address and phone.
 - **Send on WhatsApp:** opens WhatsApp (the app on phones, WhatsApp Web on computers) with the customer's number and the bill summary filled in. Staff only press Send. 10-digit numbers are treated as Indian (+91). No WhatsApp Business account is needed.
 - **Unsaved-bill protection:** the app warns before you leave a bill you haven't saved. An unfinished new bill is also kept on the device and restored the next time you open **New bill**.
@@ -17,6 +20,7 @@ Built with React, TypeScript, Vite and Supabase (Postgres plus Auth).
    - `supabase/migrations/0001_billing_schema.sql`
    - `supabase/migrations/0002_bills.sql`
    - `supabase/migrations/0003_staff.sql`
+   - `supabase/migrations/0004_complaints.sql`
 
    Run each file only once.
 3. **Create the owner login.** Open **Authentication → Users → Add user → Create new user**, enter your email and a password, and tick **Auto Confirm User**. If you create it *before* running `0003_staff.sql`, that migration makes the earliest login the **Owner**. If you create it *after*, add it to the staff list in the SQL Editor:
@@ -33,6 +37,8 @@ Built with React, TypeScript, Vite and Supabase (Postgres plus Auth).
 - Only people on the `staff` list can read or save bills (Row Level Security). Visitors who aren't logged in, and logins not on the list, see nothing.
 - **Owner** logins can change Settings and add or remove logins. **Staff** logins can create, edit, search, print and send bills.
 - Logins are created and removed by the `manage-staff` Edge Function, which runs on Supabase's servers with the service-role key and re-checks on every call that the caller is an owner.
+- Bills and complaints for the same vehicle are matched by the registration number with spaces, dashes and case ignored (`KL 39 W 0890` = `kl-39w0890`). There are no separate customer or vehicle tables.
+- Bill-to-complaint links (`bill_complaints`) are written only by `save_bill`, which rejects a complaint that belongs to a different vehicle.
 - Bills are saved only through the `save_bill` database function. It checks the labour charge and calculates the subtotal and grand total, so stored totals always match the items, including after edits.
 - The frontend uses only the publishable/anon key. **Never put the `service_role` / secret key in `.env` or in the frontend.** Every `VITE_` variable is visible in the browser.
 
