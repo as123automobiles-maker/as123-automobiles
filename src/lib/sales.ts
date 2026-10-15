@@ -8,6 +8,8 @@ export interface SaleRow {
   painting_charge: number | null;
   washing_charge: number | null;
   grand_total: number;
+  /** Staff login that created the bill. */
+  created_by?: string | null;
 }
 
 /** Totals in paise. Spares = parts & items; services = painting + washing. */

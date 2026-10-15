@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
-import { createComplaint, staffNames, updateComplaint } from "../lib/api";
+import { createComplaint, updateComplaint } from "../lib/api";
 import { validateComplaint, type ComplaintDraft } from "../lib/complaint";
 import type { FieldErrors } from "../lib/customer";
 import { errorMessage } from "../lib/supabase";
@@ -8,17 +8,20 @@ import { useUnsavedGuard } from "../lib/useUnsavedGuard";
 import CustomerInputs from "./CustomerInputs";
 import { Field, fieldProps } from "./fields";
 
-const FIELD_ORDER = ["vehicleReg", "customerName", "phone", "address", "description", "reportedOn", "attendedBy", "notes"];
+const FIELD_ORDER = ["vehicleReg", "customerName", "phone", "address", "description", "reportedOn", "notes"];
 
 export default function ComplaintForm({
   initial,
   title,
   complaintId,
+  attendedBy,
 }: {
   initial: ComplaintDraft;
   title: string;
   /** Set when editing a saved complaint. */
   complaintId?: string;
+  /** Who attended the customer: the signed-in staff member for a new complaint, as saved when editing. */
+  attendedBy: string;
 }) {
   const navigate = useNavigate();
   const [draft, setDraft] = useState(initial);
@@ -26,7 +29,6 @@ export default function ComplaintForm({
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [names, setNames] = useState<string[]>([]);
 
   const dirty = JSON.stringify(draft) !== baseline;
   const errors = useMemo(() => validateComplaint(draft).errors, [draft]);
@@ -34,14 +36,6 @@ export default function ComplaintForm({
   const errorCount = Object.keys(shown).length;
 
   const guard = useUnsavedGuard(dirty, "This complaint has not been saved and will be lost.");
-
-  useEffect(() => {
-    staffNames()
-      .then(setNames)
-      .catch(() => {
-        /* suggestions only */
-      });
-  }, []);
 
   const set = (patch: Partial<ComplaintDraft>) => setDraft((d) => ({ ...d, ...patch }));
 
@@ -110,22 +104,18 @@ export default function ComplaintForm({
               onChange={(e) => set({ reportedOn: e.target.value })}
             />
           </Field>
-          <Field fieldKey="attendedBy" label="Attended by" required error={shown.attendedBy}>
-            <input
-              {...fieldProps("attendedBy", shown.attendedBy)}
-              type="text"
-              list="staff-names"
-              autoComplete="off"
-              placeholder="Staff member who spoke to the customer"
-              value={draft.attendedBy}
-              onChange={(e) => set({ attendedBy: e.target.value })}
-            />
-            <datalist id="staff-names">
-              {names.map((n) => (
-                <option key={n} value={n} />
-              ))}
-            </datalist>
-          </Field>
+          <div className="field">
+            <span className="label-like">Attended by</span>
+            <p className="attended-by">
+              <span className="attended-avatar" aria-hidden="true">
+                {attendedBy.trim().charAt(0).toUpperCase() || "?"}
+              </span>
+              {attendedBy || "Not recorded"}
+            </p>
+            <p className="hint">
+              {complaintId ? "Recorded when the complaint was saved." : "Filled in from your login when you save."}
+            </p>
+          </div>
         </div>
         <Field fieldKey="notes" label="Notes" error={shown.notes}>
           <textarea

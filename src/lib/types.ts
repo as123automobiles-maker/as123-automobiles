@@ -39,6 +39,8 @@ export interface ComplaintRow {
   description: string;
   reported_on: string;
   attended_by: string | null;
+  /** The staff login that recorded the complaint (null for older complaints). */
+  attended_by_user: string | null;
   notes: string | null;
   status: ComplaintStatus;
   created_at: string;

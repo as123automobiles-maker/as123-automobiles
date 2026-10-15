@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { addStaff, listStaff, removeStaff, resetStaffPassword } from "../lib/api";
+import { addStaff, listStaff, removeStaff, resetStaffPassword, setStaffName } from "../lib/api";
 import { useMe } from "../lib/staff";
 import { errorMessage } from "../lib/supabase";
 import type { StaffMember, StaffRole } from "../lib/types";
@@ -34,6 +34,7 @@ export default function StaffSection() {
   const [removing, setRemoving] = useState<StaffMember | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<{ member: StaffMember; password: string; error?: string } | null>(null);
+  const [renaming, setRenaming] = useState<{ member: StaffMember; name: string; error?: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -121,6 +122,32 @@ export default function StaffSection() {
     }
   }
 
+  async function onRename(e: FormEvent) {
+    e.preventDefault();
+    if (!renaming) return;
+    const name = renaming.name.trim();
+    if (!name || name.length > 100) {
+      setRenaming({ ...renaming, error: "Enter a name (up to 100 characters)." });
+      return;
+    }
+    const { member } = renaming;
+    setRenaming(null);
+    setBusyId(member.user_id);
+    setNotice(null);
+    try {
+      await setStaffName(member.user_id, name);
+      setNotice({
+        kind: "success",
+        text: member.user_id === myId ? `Your name is now ${name}. Reload the page to see it everywhere.` : `Renamed to ${name}.`,
+      });
+      await load();
+    } catch (err) {
+      setNotice({ kind: "error", text: `Couldn't change the name. ${errorMessage(err)}` });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const set = (patch: Partial<NewLogin>) => setForm((f) => ({ ...f, ...patch }));
 
   return (
@@ -153,26 +180,36 @@ export default function StaffSection() {
                 <span className={`badge ${m.role === "owner" ? "badge-owner" : ""}`}>{m.role === "owner" ? "Owner" : "Staff"}</span>
                 <div className="muted staff-email">{m.email}</div>
               </div>
-              {m.user_id !== myId && (
-                <div className="staff-actions">
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    disabled={busyId === m.user_id}
-                    onClick={() => setResetting({ member: m, password: "" })}
-                  >
-                    Change password
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-sm"
-                    disabled={busyId === m.user_id}
-                    onClick={() => setRemoving(m)}
-                  >
-                    {busyId === m.user_id ? "Working…" : "Remove"}
-                  </button>
-                </div>
-              )}
+              <div className="staff-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  disabled={busyId === m.user_id}
+                  onClick={() => setRenaming({ member: m, name: m.full_name })}
+                >
+                  Edit name
+                </button>
+                {m.user_id !== myId && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      disabled={busyId === m.user_id}
+                      onClick={() => setResetting({ member: m, password: "" })}
+                    >
+                      Change password
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      disabled={busyId === m.user_id}
+                      onClick={() => setRemoving(m)}
+                    >
+                      {busyId === m.user_id ? "Working…" : "Remove"}
+                    </button>
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -245,6 +282,39 @@ export default function StaffSection() {
           onCancel={() => setRemoving(null)}
           onConfirm={() => void confirmRemove()}
         />
+      )}
+
+      {renaming && (
+        <div className="modal-backdrop" role="presentation">
+          <form className="modal" role="dialog" aria-modal="true" aria-labelledby="rename-title" onSubmit={onRename} noValidate>
+            <h2 id="rename-title">{renaming.member.user_id === myId ? "Your name" : `Rename ${renaming.member.full_name || renaming.member.email}`}</h2>
+            <p className="hint">Shown as "Attended by" on complaints and in staff reports. Past complaints update too.</p>
+            <div className={`field${renaming.error ? " has-error" : ""}`}>
+              <label htmlFor="f-rename">Name</label>
+              <input
+                {...fieldProps("rename", renaming.error)}
+                type="text"
+                autoComplete="off"
+                autoFocus
+                value={renaming.name}
+                onChange={(e) => setRenaming({ ...renaming, name: e.target.value, error: undefined })}
+              />
+              {renaming.error && (
+                <p className="field-error" id="f-rename-error">
+                  {renaming.error}
+                </p>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-outline" onClick={() => setRenaming(null)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save name
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {resetting && (

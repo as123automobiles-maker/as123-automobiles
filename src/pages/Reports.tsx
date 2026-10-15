@@ -1,10 +1,11 @@
 import { useState } from "react";
 import SalesChart from "../components/SalesChart";
-import { salesForRange } from "../lib/api";
+import { complaintsForRange, listStaff, salesForRange } from "../lib/api";
 import { todayISO } from "../lib/customer";
 import { formatDate } from "../lib/format";
 import { formatINR } from "../lib/money";
-import { monthRange, salesByDay, shiftDay, shiftMonth, summarize, type SalesSummary } from "../lib/sales";
+import { computeStaffPerformance } from "../lib/performance";
+import { monthRange, salesByDay, shiftDay, shiftMonth, summarize, type SaleRow, type SalesSummary } from "../lib/sales";
 import { useIsOwner, useMe } from "../lib/staff";
 import { useLoad } from "../lib/useLoad";
 
@@ -300,6 +301,103 @@ function SalesBody({
         )}
         <p className="hint">Sales are counted on the bill's "Date received".</p>
       </section>
+
+      <StaffPerformanceSection month={month} rows={rows} loadingSales={loading} view={view} />
     </>
+  );
+}
+
+/** Per-staff complaints attended and bills made for the month (owner only, like the rest of Reports). */
+function StaffPerformanceSection({
+  month,
+  rows,
+  loadingSales,
+  view,
+}: {
+  month: string;
+  rows: SaleRow[];
+  loadingSales: boolean;
+  view: View;
+}) {
+  const { from, to } = monthRange(month);
+  const extra = useLoad(`staff|${month}`, () => Promise.all([listStaff(), complaintsForRange(from, to)]));
+
+  let body;
+  if (extra.status === "error") {
+    body = (
+      <div className="alert alert-error" role="alert">
+        <span>Couldn't load staff performance. {extra.message}</span>
+        <button type="button" className="btn btn-outline btn-sm" onClick={extra.retry}>
+          Try again
+        </button>
+      </div>
+    );
+  } else if (extra.status === "loading" || loadingSales) {
+    body = <p className="muted">Loading…</p>;
+  } else {
+    const [staff, complaints] = extra.data;
+    const perf = computeStaffPerformance(staff, rows, complaints);
+    const topSales = Math.max(1, ...perf.map((p) => p.sales));
+    body = (
+      <div className="table-scroll">
+        <table className="sales-table staff-table">
+          <thead>
+            <tr>
+              <th>Staff</th>
+              <th className="num">Complaints attended</th>
+              <th className="num">Resolved</th>
+              <th className="num">Bills made</th>
+              {view === "separate" && (
+                <>
+                  <th className="num">Spares</th>
+                  <th className="num">Labour</th>
+                </>
+              )}
+              <th className="num">Sales</th>
+            </tr>
+          </thead>
+          <tbody>
+            {perf.map((p) => (
+              <tr key={p.key} className="no-click">
+                <td>
+                  <strong>{p.name}</strong>
+                  {p.role === "owner" && <span className="badge badge-owner">Owner</span>}
+                  {p.role === null && <span className="badge">Not on staff list</span>}
+                </td>
+                <td className="num">{p.complaints}</td>
+                <td className="num">
+                  {p.resolved}
+                  {p.complaints > 0 && <span className="muted"> ({Math.round((p.resolved / p.complaints) * 100)}%)</span>}
+                </td>
+                <td className="num">{p.bills}</td>
+                {view === "separate" && (
+                  <>
+                    <td className="num">{formatINR(p.spares)}</td>
+                    <td className="num">{formatINR(p.labour)}</td>
+                  </>
+                )}
+                <td className="num">
+                  <b>{formatINR(p.sales)}</b>
+                  <span className="share-bar" aria-hidden="true">
+                    <i style={{ width: `${(p.sales / topSales) * 100}%` }} />
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <section className="card">
+      <h2>Staff performance · {monthLabel(month)}</h2>
+      {body}
+      <p className="hint">
+        Complaints count for the staff member who was signed in when the complaint was saved; bills count for whoever
+        created them. Complaints are counted by date reported, bills by date received.
+      </p>
+    </section>
   );
 }

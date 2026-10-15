@@ -43,10 +43,10 @@ export function NewComplaint() {
   const me = useMe();
   const [initial] = useState(() => {
     const prefill = (location.state as { prefill?: Partial<CustomerFields> } | null)?.prefill;
-    const name = me.status === "ok" ? me.me.full_name : "";
-    return emptyComplaint(name, prefill ?? {});
+    return emptyComplaint(prefill ?? {});
   });
-  return <ComplaintForm initial={initial} title="New complaint" />;
+  const name = me.status === "ok" ? me.me.full_name.trim() || me.me.email.split("@")[0] : "";
+  return <ComplaintForm initial={initial} title="New complaint" attendedBy={name} />;
 }
 
 export function EditComplaint() {
@@ -57,7 +57,14 @@ export function EditComplaint() {
   if (state.status === "loading") return <p className="page-status">Loading complaint…</p>;
   if (state.status === "error") return <LoadFailed message={state.message} onRetry={state.retry} />;
   if (!state.data || !initial) return <NotFound />;
-  return <ComplaintForm initial={initial} complaintId={state.data.id} title={`Edit complaint #${state.data.complaint_number}`} />;
+  return (
+    <ComplaintForm
+      initial={initial}
+      complaintId={state.data.id}
+      attendedBy={state.data.attended_by ?? ""}
+      title={`Edit complaint #${state.data.complaint_number}`}
+    />
+  );
 }
 
 export function ComplaintView() {

@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import type { SaveBillPayload } from "./bill";
 import type { ComplaintPayload } from "./complaint";
+import type { PerformanceComplaint } from "./performance";
 import type { SaleRow } from "./sales";
 import { supabase } from "./supabase";
 import type {
@@ -131,13 +132,6 @@ export async function setComplaintStatus(id: string, status: ComplaintStatus): P
   if (error) throw error;
 }
 
-/** Staff names for the "Attended by" suggestions. */
-export async function staffNames(): Promise<string[]> {
-  const { data, error } = await supabase.rpc("staff_names");
-  if (error) throw error;
-  return ((data ?? []) as { full_name: string }[]).map((r) => r.full_name);
-}
-
 export async function getShopSettings(): Promise<ShopSettings> {
   const { data, error } = await supabase
     .from("shop_settings")
@@ -206,7 +200,7 @@ export async function salesForRange(from: string, to: string): Promise<SaleRow[]
   for (let start = 0; ; start += PAGE) {
     const { data, error } = await supabase
       .from("bills")
-      .select("date_received, items_subtotal, labour_charge, painting_charge, washing_charge, grand_total")
+      .select("date_received, items_subtotal, labour_charge, painting_charge, washing_charge, grand_total, created_by")
       .gte("date_received", from)
       .lte("date_received", to)
       .order("date_received")
@@ -250,4 +244,29 @@ export async function countBillsOn(date: string): Promise<number> {
     .eq("date_received", date);
   if (error) throw error;
   return count ?? 0;
+}
+
+/** Complaints reported between two dates (inclusive), with who attended and their status. */
+export async function complaintsForRange(from: string, to: string): Promise<PerformanceComplaint[]> {
+  const PAGE = 1000;
+  const rows: PerformanceComplaint[] = [];
+  for (let start = 0; ; start += PAGE) {
+    const { data, error } = await supabase
+      .from("complaints")
+      .select("attended_by, attended_by_user, status")
+      .gte("reported_on", from)
+      .lte("reported_on", to)
+      .order("reported_on")
+      .order("id")
+      .range(start, start + PAGE - 1);
+    if (error) throw error;
+    rows.push(...((data ?? []) as PerformanceComplaint[]));
+    if (!data || data.length < PAGE) return rows;
+  }
+}
+
+/** Owners can rename anyone; staff can rename themselves. */
+export async function setStaffName(userId: string, name: string): Promise<void> {
+  const { error } = await supabase.rpc("set_staff_name", { p_user: userId, p_name: name });
+  if (error) throw error;
 }

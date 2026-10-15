@@ -1895,3 +1895,50 @@ h3 {
   margin: 4px 0 6px;
   font-weight: 600;
 }
+
+/* ---------- Attended by & staff performance ---------- */
+
+.attended-by {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 0;
+  min-height: var(--tap);
+  font-weight: 700;
+}
+
+.attended-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #ffb02e);
+  color: #fff;
+  font-weight: 800;
+  flex: none;
+}
+
+.staff-table td .badge {
+  margin-left: 8px;
+}
+
+.sales-table tbody tr.no-click {
+  cursor: default;
+}
+
+.share-bar {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  border-radius: 4px;
+  background: #e6eaf1;
+  overflow: hidden;
+}
+
+.share-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: #2a78d6;
+}

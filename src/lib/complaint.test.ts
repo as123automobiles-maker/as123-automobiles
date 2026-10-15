@@ -6,7 +6,7 @@ import type { BillWithComplaints, ComplaintWithBills } from "./types";
 
 function filled(overrides: Partial<ComplaintDraft> = {}): ComplaintDraft {
   return {
-    ...emptyComplaint("Ravi"),
+    ...emptyComplaint(),
     customerName: "Thomas",
     phone: "97440 60485",
     vehicleReg: "kl 39 w 0890",
@@ -17,8 +17,8 @@ function filled(overrides: Partial<ComplaintDraft> = {}): ComplaintDraft {
 }
 
 describe("validateComplaint", () => {
-  it("builds the payload; notes are optional", () => {
-    const { errors, payload } = validateComplaint(filled({ attendedBy: " Ravi ", notes: "" }));
+  it("builds the payload; notes are optional and who attended is left to the database", () => {
+    const { errors, payload } = validateComplaint(filled({ notes: "" }));
     expect(errors).toEqual({});
     expect(payload).toEqual({
       customer_name: "Thomas",
@@ -27,21 +27,18 @@ describe("validateComplaint", () => {
       vehicle_reg: "KL 39 W 0890",
       description: "Brake noise when stopping",
       reported_on: "2026-10-14",
-      attended_by: "Ravi",
       notes: null,
       status: "open",
     });
   });
 
-  it("requires the staff member who attended", () => {
-    const r = validateComplaint(filled({ attendedBy: "  " }));
-    expect(r.errors.attendedBy).toBe("Enter the staff member who attended the customer.");
-    expect(r.payload).toBeNull();
+  it("starts with any customer details passed in", () => {
+    expect(emptyComplaint({ vehicleReg: "KL39W0890" }).vehicleReg).toBe("KL39W0890");
   });
 
-  it("requires customer, vehicle, a description and who attended", () => {
+  it("requires customer, vehicle and a description", () => {
     const r = validateComplaint(emptyComplaint());
-    expect(Object.keys(r.errors).sort()).toEqual(["attendedBy", "customerName", "description", "phone", "vehicleReg"]);
+    expect(Object.keys(r.errors).sort()).toEqual(["customerName", "description", "phone", "vehicleReg"]);
     expect(r.payload).toBeNull();
   });
 
@@ -51,7 +48,7 @@ describe("validateComplaint", () => {
 
   it("round-trips a saved complaint", () => {
     const d = filled({ notes: "Customer waiting" });
-    const saved = { ...validateComplaint(d).payload!, id: "c1", complaint_number: 1, vehicle_reg_key: "KL39W0890", created_at: "", updated_at: "" };
+    const saved = { ...validateComplaint(d).payload!, attended_by: "Ravi", attended_by_user: null, id: "c1", complaint_number: 1, vehicle_reg_key: "KL39W0890", created_at: "", updated_at: "" };
     expect(complaintToDraft(saved)).toEqual({ ...d, vehicleReg: "KL 39 W 0890", address: "" });
   });
 });
@@ -73,6 +70,7 @@ const complaint = (n: number, date: string, billCount: number): ComplaintWithBil
   description: `Complaint ${n}`,
   reported_on: date,
   attended_by: null,
+  attended_by_user: null,
   notes: null,
   status: billCount ? "resolved" : "open",
   created_at: "",
