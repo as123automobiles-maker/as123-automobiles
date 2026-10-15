@@ -53,6 +53,7 @@ const router = createBrowserRouter(
         { path: "complaints/:id/edit", element: <EditComplaint /> },
         { path: "vehicles/:key", element: <VehicleHistory /> },
         { path: "reports", element: <Reports /> },
+        { path: "reports/:section", element: <Reports /> },
         { path: "sales", element: <Navigate to="/reports" replace /> },
         { path: "settings", element: <Settings /> },
         { path: "settings/:section", element: <Settings /> },

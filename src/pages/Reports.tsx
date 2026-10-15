@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigate, NavLink, useNavigate, useParams } from "react-router";
 import SalesChart from "../components/SalesChart";
 import { complaintsForRange, listStaff, salesForRange } from "../lib/api";
 import { todayISO } from "../lib/customer";
@@ -30,7 +31,12 @@ function SummaryTiles({ s, view }: { s: SalesSummary; view: View }) {
   if (view === "combined")
     return (
       <div className="tiles">
-        <Tile strong label="Total sales (incl. labour)" value={formatINR(s.total)} sub={s.discount > 0 ? `${bills} · after ${formatINR(s.discount)} discount` : bills} />
+        <Tile
+          strong
+          label="Total sales (incl. labour)"
+          value={formatINR(s.total)}
+          sub={s.discount > 0 ? `${bills} · after ${formatINR(s.discount)} discount` : bills}
+        />
         <Tile label="Excluding labour" value={formatINR(s.excludingLabour)} sub="Spares + painting & washing" />
       </div>
     );
@@ -40,15 +46,69 @@ function SummaryTiles({ s, view }: { s: SalesSummary; view: View }) {
       <Tile label="Spare parts" value={formatINR(s.spares)} sub="Parts & items on bills" />
       <Tile label="Labour charge" value={formatINR(s.labour)} />
       <Tile label="Painting & washing" value={formatINR(s.services)} />
-      {s.discount > 0 && <Tile label="Discounts given" value={`−${formatINR(s.discount)}`} sub="Already taken off the total" />}
+      {s.discount > 0 && (
+        <Tile label="Discounts given" value={`−${formatINR(s.discount)}`} sub="Already taken off the total" />
+      )}
     </div>
   );
 }
 
 /** Owner-only reports: daily and monthly sales overview. */
+const CATEGORIES = [
+  {
+    label: "Sales",
+    items: [
+      { id: "daily", label: "Daily sales", hint: "One day's totals" },
+      { id: "monthly", label: "Monthly sales", hint: "Month totals, day by day" },
+      { id: "chart", label: "Daily comparison", hint: "Chart: with and without labour" },
+    ],
+  },
+  {
+    label: "Staff",
+    items: [{ id: "staff", label: "Staff performance", hint: "Complaints and bills per person" }],
+  },
+] as const;
+
+type ReportId = (typeof CATEGORIES)[number]["items"][number]["id"];
+const REPORT_IDS = CATEGORIES.flatMap((c) => c.items.map((i) => i.id)) as ReportId[];
+
+/** Month picker with previous/next buttons, shared by the monthly, chart and staff reports. */
+function MonthStepper({ month, today, onMonth }: { month: string; today: string; onMonth: (m: string) => void }) {
+  return (
+    <div className="stepper">
+      <button
+        type="button"
+        className="btn btn-outline btn-sm"
+        aria-label="Previous month"
+        onClick={() => onMonth(shiftMonth(month, -1))}
+      >
+        ‹
+      </button>
+      <input
+        type="month"
+        aria-label="Month"
+        value={month}
+        max={today.slice(0, 7)}
+        onChange={(e) => e.target.value && onMonth(e.target.value)}
+      />
+      <button
+        type="button"
+        className="btn btn-outline btn-sm"
+        aria-label="Next month"
+        disabled={month >= today.slice(0, 7)}
+        onClick={() => onMonth(shiftMonth(month, 1))}
+      >
+        ›
+      </button>
+    </div>
+  );
+}
+
 export default function Reports() {
   const me = useMe();
   const isOwner = useIsOwner();
+  const { section } = useParams();
+  const navigate = useNavigate();
   const today = todayISO();
   const [month, setMonth] = useState(today.slice(0, 7));
   const [day, setDay] = useState(today);
@@ -64,6 +124,8 @@ export default function Reports() {
         <p>Only the workshop owner can see reports.</p>
       </div>
     );
+  if (!section || !REPORT_IDS.includes(section as ReportId)) return <Navigate to="/reports/daily" replace />;
+  const current = section as ReportId;
 
   function goToMonth(m: string) {
     setMonth(m);
@@ -104,23 +166,51 @@ export default function Reports() {
         </div>
       )}
 
-      {state.status !== "error" && (
-        <SalesBody
-          loading={state.status === "loading"}
-          rows={state.status === "ok" ? state.data : []}
-          month={month}
-          day={day}
-          today={today}
-          view={view}
-          onMonth={goToMonth}
-          onDay={goToDay}
-        />
-      )}
+      <div className="settings-layout">
+        <nav className="settings-nav card" aria-label="Report categories">
+          {CATEGORIES.map((c) => (
+            <div key={c.label} className="settings-group">
+              <p className="settings-group-label">{c.label}</p>
+              <ul>
+                {c.items.map((item) => (
+                  <li key={item.id}>
+                    <NavLink to={`/reports/${item.id}`} className="settings-link">
+                      <span>{item.label}</span>
+                      <small>{item.hint}</small>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+        <div className="settings-content">
+          {state.status !== "error" && (
+            <SalesBody
+              section={current}
+              loading={state.status === "loading"}
+              rows={state.status === "ok" ? state.data : []}
+              month={month}
+              day={day}
+              today={today}
+              view={view}
+              onMonth={goToMonth}
+              onDay={goToDay}
+              onOpenDay={(d) => {
+                goToDay(d);
+                navigate("/reports/daily");
+              }}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 function SalesBody({
+  section,
+  onOpenDay,
   loading,
   rows,
   month,
@@ -130,6 +220,8 @@ function SalesBody({
   onMonth,
   onDay,
 }: {
+  section: ReportId;
+  onOpenDay: (d: string) => void;
   loading: boolean;
   rows: Parameters<typeof summarize>[0];
   month: string;
@@ -148,165 +240,179 @@ function SalesBody({
 
   return (
     <>
-      <section className="card">
-        <div className="card-head">
-          <h2>Daily overview</h2>
-          <div className="stepper">
-            <button type="button" className="btn btn-outline btn-sm" aria-label="Previous day" onClick={() => onDay(shiftDay(day, -1))}>
-              ‹
-            </button>
-            <input type="date" aria-label="Day" value={day} max={today} onChange={(e) => onDay(e.target.value)} />
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              aria-label="Next day"
-              disabled={day >= today}
-              onClick={() => onDay(shiftDay(day, 1))}
-            >
-              ›
-            </button>
+      {section === "daily" && (
+        <section className="card">
+          <div className="card-head">
+            <h2>Daily sales</h2>
+            <div className="stepper">
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                aria-label="Previous day"
+                onClick={() => onDay(shiftDay(day, -1))}
+              >
+                ‹
+              </button>
+              <input type="date" aria-label="Day" value={day} max={today} onChange={(e) => onDay(e.target.value)} />
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                aria-label="Next day"
+                disabled={day >= today}
+                onClick={() => onDay(shiftDay(day, 1))}
+              >
+                ›
+              </button>
+            </div>
           </div>
-        </div>
-        <p className="muted overview-date">
-          {formatDate(day)}
-          {day === today && " · Today"}
-        </p>
-        {loading ? <p className="muted">Loading…</p> : <SummaryTiles s={daySales} view={view} />}
-        {!loading && daySales.bills === 0 && <p className="muted">No bills received on this day.</p>}
-      </section>
+          <p className="muted overview-date">
+            {formatDate(day)}
+            {day === today && " · Today"}
+          </p>
+          {loading ? <p className="muted">Loading…</p> : <SummaryTiles s={daySales} view={view} />}
+          {!loading && daySales.bills === 0 && <p className="muted">No bills received on this day.</p>}
+        </section>
+      )}
 
-      <section className="card">
-        <div className="card-head">
-          <h2>Monthly overview</h2>
-          <div className="stepper">
-            <button type="button" className="btn btn-outline btn-sm" aria-label="Previous month" onClick={() => onMonth(shiftMonth(month, -1))}>
-              ‹
-            </button>
-            <input
-              type="month"
-              aria-label="Month"
-              value={month}
-              max={today.slice(0, 7)}
-              onChange={(e) => e.target.value && onMonth(e.target.value)}
-            />
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              aria-label="Next month"
-              disabled={month >= today.slice(0, 7)}
-              onClick={() => onMonth(shiftMonth(month, 1))}
-            >
-              ›
-            </button>
-          </div>
-        </div>
-        <p className="muted overview-date">{monthLabel(month)}</p>
-        {loading ? (
-          <p className="muted">Loading…</p>
-        ) : (
-          <>
-            <SummaryTiles s={monthTotal} view={view} />
-            {monthTotal.bills > 0 ? (
-              <p className="month-facts">
-                <span>
-                  Average per working day: <b>{formatINR(Math.round(monthTotal.total / activeDays.length))}</b> ({activeDays.length}{" "}
-                  {activeDays.length === 1 ? "day" : "days"} with bills)
-                </span>
-                {best && (
-                  <span>
-                    Best day: <b>{formatDate(best.date)}</b> · {formatINR(best.total)}
-                  </span>
-                )}
-              </p>
+      {section === "monthly" && (
+        <>
+          <section className="card">
+            <div className="card-head">
+              <h2>Monthly sales</h2>
+              <MonthStepper month={month} today={today} onMonth={onMonth} />
+            </div>
+            <p className="muted overview-date">{monthLabel(month)}</p>
+            {loading ? (
+              <p className="muted">Loading…</p>
             ) : (
-              <p className="muted">{isFutureMonth ? "This month hasn't started yet." : "No bills received this month."}</p>
-            )}
-          </>
-        )}
-      </section>
-
-      <section className="card">
-        <h2>Daily comparison · {monthLabel(month)}</h2>
-        {loading ? (
-          <p className="muted">Loading chart…</p>
-        ) : monthTotal.bills === 0 ? (
-          <p className="muted">No sales to chart for this month.</p>
-        ) : (
-          <SalesChart days={days} selected={day} onSelect={onDay} />
-        )}
-      </section>
-
-      <section className="card">
-        <h2>Day by day</h2>
-        {loading ? (
-          <p className="muted">Loading…</p>
-        ) : activeDays.length === 0 ? (
-          <p className="muted">No bills this month.</p>
-        ) : (
-          <div className="table-scroll">
-            <table className="sales-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th className="num">Bills</th>
-                  {view === "separate" ? (
-                    <>
-                      <th className="num">Spares</th>
-                      <th className="num">Labour</th>
-                      <th className="num">Painting & washing</th>
-                      <th className="num">Discount</th>
-                    </>
-                  ) : (
-                    <th className="num">Excl. labour</th>
-                  )}
-                  <th className="num">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeDays.map((d) => (
-                  <tr key={d.date} className={d.date === day ? "row-selected" : undefined} onClick={() => onDay(d.date)}>
-                    <td>{formatDate(d.date)}</td>
-                    <td className="num">{d.bills}</td>
-                    {view === "separate" ? (
-                      <>
-                        <td className="num">{formatINR(d.spares)}</td>
-                        <td className="num">{formatINR(d.labour)}</td>
-                        <td className="num">{formatINR(d.services)}</td>
-                        <td className="num">{d.discount > 0 ? `−${formatINR(d.discount)}` : "—"}</td>
-                      </>
-                    ) : (
-                      <td className="num">{formatINR(d.excludingLabour)}</td>
+              <>
+                <SummaryTiles s={monthTotal} view={view} />
+                {monthTotal.bills > 0 ? (
+                  <p className="month-facts">
+                    <span>
+                      Average per working day: <b>{formatINR(Math.round(monthTotal.total / activeDays.length))}</b> (
+                      {activeDays.length} {activeDays.length === 1 ? "day" : "days"} with bills)
+                    </span>
+                    {best && (
+                      <span>
+                        Best day: <b>{formatDate(best.date)}</b> · {formatINR(best.total)}
+                      </span>
                     )}
-                    <td className="num">
-                      <b>{formatINR(d.total)}</b>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td>Month total</td>
-                  <td className="num">{monthTotal.bills}</td>
-                  {view === "separate" ? (
-                    <>
-                      <td className="num">{formatINR(monthTotal.spares)}</td>
-                      <td className="num">{formatINR(monthTotal.labour)}</td>
-                      <td className="num">{formatINR(monthTotal.services)}</td>
-                      <td className="num">{monthTotal.discount > 0 ? `−${formatINR(monthTotal.discount)}` : "—"}</td>
-                    </>
-                  ) : (
-                    <td className="num">{formatINR(monthTotal.excludingLabour)}</td>
-                  )}
-                  <td className="num">{formatINR(monthTotal.total)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
-        <p className="hint">Sales are counted on the bill's "Date received".</p>
-      </section>
+                  </p>
+                ) : (
+                  <p className="muted">
+                    {isFutureMonth ? "This month hasn't started yet." : "No bills received this month."}
+                  </p>
+                )}
+              </>
+            )}
+          </section>
 
-      <StaffPerformanceSection month={month} rows={rows} loadingSales={loading} view={view} />
+          <section className="card">
+            <h2>Day by day</h2>
+            {loading ? (
+              <p className="muted">Loading…</p>
+            ) : activeDays.length === 0 ? (
+              <p className="muted">No bills this month.</p>
+            ) : (
+              <div className="table-scroll">
+                <table className="sales-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th className="num">Bills</th>
+                      {view === "separate" ? (
+                        <>
+                          <th className="num">Spares</th>
+                          <th className="num">Labour</th>
+                          <th className="num">Painting & washing</th>
+                          <th className="num">Discount</th>
+                        </>
+                      ) : (
+                        <th className="num">Excl. labour</th>
+                      )}
+                      <th className="num">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeDays.map((d) => (
+                      <tr
+                        key={d.date}
+                        className={d.date === day ? "row-selected" : undefined}
+                        onClick={() => onOpenDay(d.date)}
+                      >
+                        <td>{formatDate(d.date)}</td>
+                        <td className="num">{d.bills}</td>
+                        {view === "separate" ? (
+                          <>
+                            <td className="num">{formatINR(d.spares)}</td>
+                            <td className="num">{formatINR(d.labour)}</td>
+                            <td className="num">{formatINR(d.services)}</td>
+                            <td className="num">{d.discount > 0 ? `−${formatINR(d.discount)}` : "—"}</td>
+                          </>
+                        ) : (
+                          <td className="num">{formatINR(d.excludingLabour)}</td>
+                        )}
+                        <td className="num">
+                          <b>{formatINR(d.total)}</b>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td>Month total</td>
+                      <td className="num">{monthTotal.bills}</td>
+                      {view === "separate" ? (
+                        <>
+                          <td className="num">{formatINR(monthTotal.spares)}</td>
+                          <td className="num">{formatINR(monthTotal.labour)}</td>
+                          <td className="num">{formatINR(monthTotal.services)}</td>
+                          <td className="num">
+                            {monthTotal.discount > 0 ? `−${formatINR(monthTotal.discount)}` : "—"}
+                          </td>
+                        </>
+                      ) : (
+                        <td className="num">{formatINR(monthTotal.excludingLabour)}</td>
+                      )}
+                      <td className="num">{formatINR(monthTotal.total)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+            <p className="hint">Sales are counted on the bill's "Date received". Tap a day to open its daily sales.</p>
+          </section>
+        </>
+      )}
+
+      {section === "chart" && (
+        <section className="card">
+          <div className="card-head">
+            <h2>Daily comparison</h2>
+            <MonthStepper month={month} today={today} onMonth={onMonth} />
+          </div>
+          <p className="muted overview-date">{monthLabel(month)}</p>
+          {loading ? (
+            <p className="muted">Loading chart…</p>
+          ) : monthTotal.bills === 0 ? (
+            <p className="muted">No sales to chart for this month.</p>
+          ) : (
+            <SalesChart days={days} selected={day} onSelect={onOpenDay} />
+          )}
+        </section>
+      )}
+
+      {section === "staff" && (
+        <StaffPerformanceSection
+          month={month}
+          rows={rows}
+          loadingSales={loading}
+          view={view}
+          today={today}
+          onMonth={onMonth}
+        />
+      )}
     </>
   );
 }
@@ -317,11 +423,15 @@ function StaffPerformanceSection({
   rows,
   loadingSales,
   view,
+  today,
+  onMonth,
 }: {
   month: string;
   rows: SaleRow[];
   loadingSales: boolean;
   view: View;
+  today: string;
+  onMonth: (m: string) => void;
 }) {
   const { from, to } = monthRange(month);
   const extra = useLoad(`staff|${month}`, () => Promise.all([listStaff(), complaintsForRange(from, to)]));
@@ -371,7 +481,9 @@ function StaffPerformanceSection({
                 <td className="num">{p.complaints}</td>
                 <td className="num">
                   {p.resolved}
-                  {p.complaints > 0 && <span className="muted"> ({Math.round((p.resolved / p.complaints) * 100)}%)</span>}
+                  {p.complaints > 0 && (
+                    <span className="muted"> ({Math.round((p.resolved / p.complaints) * 100)}%)</span>
+                  )}
                 </td>
                 <td className="num">{p.bills}</td>
                 {view === "separate" && (
@@ -396,7 +508,11 @@ function StaffPerformanceSection({
 
   return (
     <section className="card">
-      <h2>Staff performance · {monthLabel(month)}</h2>
+      <div className="card-head">
+        <h2>Staff performance</h2>
+        <MonthStepper month={month} today={today} onMonth={onMonth} />
+      </div>
+      <p className="muted overview-date">{monthLabel(month)}</p>
       {body}
       <p className="hint">
         Complaints count for the staff member who was signed in when the complaint was saved; bills count for whoever

@@ -114,13 +114,13 @@ export default function Dashboard() {
           <>
             <Stat
               strong
-              to="/reports"
+              to="/reports/daily"
               label="Today's sales"
               value={loadingSales ? "…" : formatINR(todaySales.total)}
               sub={loadingSales ? undefined : `Labour ${formatINR(todaySales.labour)}`}
             />
             <Stat
-              to="/reports"
+              to="/reports/monthly"
               label="This month"
               value={loadingSales ? "…" : formatINR(month.total)}
               sub={loadingSales ? undefined : `${month.bills} ${month.bills === 1 ? "bill" : "bills"}`}
@@ -133,7 +133,7 @@ export default function Dashboard() {
         <section className="card">
           <div className="card-head">
             <h2>Daily sales · last {CHART_DAYS} days</h2>
-            <Link to="/reports" className="link-button">
+            <Link to="/reports/chart" className="link-button">
               Full reports →
             </Link>
           </div>
