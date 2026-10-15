@@ -43,8 +43,8 @@ function SummaryTiles({ s, view }: { s: SalesSummary; view: View }) {
   );
 }
 
-/** Owner-only daily and monthly sales overview. */
-export default function Sales() {
+/** Owner-only reports: daily and monthly sales overview. */
+export default function Reports() {
   const me = useMe();
   const isOwner = useIsOwner();
   const today = todayISO();
@@ -58,8 +58,8 @@ export default function Sales() {
   if (!isOwner)
     return (
       <div className="empty">
-        <h1>Sales</h1>
-        <p>Only the workshop owner can see sales figures.</p>
+        <h1>Reports</h1>
+        <p>Only the workshop owner can see reports.</p>
       </div>
     );
 
@@ -89,7 +89,7 @@ export default function Sales() {
   return (
     <div>
       <div className="sales-head">
-        <h1>Sales</h1>
+        <h1>Reports</h1>
         {viewToggle}
       </div>
 

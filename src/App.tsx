@@ -1,4 +1,4 @@
-import { createBrowserRouter, Link, RouterProvider } from "react-router";
+import { createBrowserRouter, Link, Navigate, RouterProvider } from "react-router";
 import Layout from "./components/Layout";
 import { AuthProvider, RequireAuth } from "./lib/auth";
 import { ShopSettingsProvider } from "./lib/shopSettings";
@@ -10,7 +10,7 @@ import { ComplaintView, EditComplaint, NewComplaint } from "./pages/ComplaintPag
 import EditBill from "./pages/EditBill";
 import Login from "./pages/Login";
 import NewBill from "./pages/NewBill";
-import Sales from "./pages/Sales";
+import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import VehicleHistory from "./pages/VehicleHistory";
 
@@ -48,7 +48,8 @@ const router = createBrowserRouter(
         { path: "complaints/:id", element: <ComplaintView /> },
         { path: "complaints/:id/edit", element: <EditComplaint /> },
         { path: "vehicles/:key", element: <VehicleHistory /> },
-        { path: "sales", element: <Sales /> },
+        { path: "reports", element: <Reports /> },
+        { path: "sales", element: <Navigate to="/reports" replace /> },
         { path: "settings", element: <Settings /> },
       ],
     },

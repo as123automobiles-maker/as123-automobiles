@@ -47,7 +47,7 @@ export default function Layout() {
               New bill
             </NavLink>
             <NavLink to="/bills">Find bills</NavLink>
-            {me.me.role === "owner" && <NavLink to="/sales">Sales</NavLink>}
+            {me.me.role === "owner" && <NavLink to="/reports">Reports</NavLink>}
             {me.me.role === "owner" && <NavLink to="/settings">Settings</NavLink>}
             <button type="button" className="link-button" onClick={signOut}>
               Sign out
