@@ -33,8 +33,10 @@ function loadDraft(): BillDraft | null {
       d.items.every((i) => typeof i.key === "string" && typeof i.description === "string" && typeof i.price === "string") &&
       typeof d.painting?.selected === "boolean" &&
       typeof d.washing?.selected === "boolean";
-    // Drafts saved before complaints were added have no complaintIds.
+    // Drafts saved by older versions lack newer fields.
     if (looksValid && !Array.isArray(d.complaintIds)) d.complaintIds = [];
+    if (looksValid && typeof d.deliveredOn !== "string") d.deliveredOn = emptyBill().deliveredOn;
+    if (looksValid && (typeof d.discount !== "object" || d.discount === null)) d.discount = emptyBill().discount;
     return looksValid && hasContent(d) ? d : null;
   } catch {
     return null;

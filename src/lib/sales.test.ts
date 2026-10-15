@@ -18,9 +18,15 @@ describe("summarize", () => {
       spares: 214950,
       labour: 75000,
       services: 215000,
+      discount: 0,
       total: 504950,
       excludingLabour: 429950,
     });
+  });
+
+  it("counts totals after discount and adds up discounts given", () => {
+    const discounted = { ...row("2026-10-14", 1000, 500), discount: 150, grand_total: 1350 };
+    expect(summarize([discounted])).toMatchObject({ total: 135000, discount: 15000, excludingLabour: 85000 });
   });
 
   it("is all zero with no bills", () => {

@@ -78,7 +78,7 @@ export default function BillView() {
           <div className="bill-meta">
             <p className="bill-no">Bill #{bill.bill_number}</p>
             <p>Received: {formatDate(bill.date_received)}</p>
-            <p>Expected pickup: {formatDate(bill.expected_pickup)}</p>
+            <p>Delivered: {formatDate(bill.delivered_on)}</p>
           </div>
         </header>
 
@@ -175,6 +175,15 @@ export default function BillView() {
             <div>
               <dt>Washing</dt>
               <dd>{inr(bill.washing_charge)}</dd>
+            </div>
+          )}
+          {Number(bill.discount) > 0 && (
+            <div className="discount-row">
+              <dt>
+                Discount
+                {bill.discount_percent !== null && ` (${Number(bill.discount_percent)}%)`}
+              </dt>
+              <dd>−{inr(bill.discount)}</dd>
             </div>
           )}
           <div className="grand">

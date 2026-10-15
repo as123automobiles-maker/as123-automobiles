@@ -15,14 +15,23 @@ export interface OptionalService {
   amount: string;
 }
 
+/** Optional discount, typed either as a rupee amount or as a % of the bill. */
+export interface DiscountDraft {
+  mode: "amount" | "percent";
+  value: string;
+}
+
 /** The bill form's state, exactly as typed. */
 export interface BillDraft extends CustomerFields {
   dateReceived: string;
   expectedPickup: string;
+  /** Date the vehicle is handed back; defaults to the bill date. */
+  deliveredOn: string;
   items: ItemDraft[];
   labour: string;
   painting: OptionalService;
   washing: OptionalService;
+  discount: DiscountDraft;
   /** Complaints (for the same vehicle) this bill addresses. Optional. */
   complaintIds: string[];
 }
@@ -42,10 +51,12 @@ export function emptyBill(): BillDraft {
     vehicleReg: "",
     dateReceived: todayISO(),
     expectedPickup: "",
+    deliveredOn: todayISO(),
     items: [newItem()],
     labour: "",
     painting: { selected: false, amount: "" },
     washing: { selected: false, amount: "" },
+    discount: { mode: "amount", value: "" },
   };
 }
 
@@ -58,6 +69,9 @@ export interface Totals {
   labour: number;
   painting: number;
   washing: number;
+  /** Before discount. */
+  gross: number;
+  discount: number;
   grandTotal: number;
 }
 
@@ -66,13 +80,24 @@ function paiseOrZero(raw: string): number {
   return p.ok ? p.paise : 0;
 }
 
+/** Discount in paise for a bill worth `gross` paise (0 when blank or not valid yet). */
+export function discountPaise(discount: DiscountDraft, gross: number): number {
+  const p = parseAmount(discount.value);
+  if (!p.ok) return 0;
+  // A percentage is typed like an amount: "10" -> 1000 "paise" = 10.00%.
+  if (discount.mode === "percent") return p.paise > 10000 ? 0 : Math.round((gross * p.paise) / 10000);
+  return p.paise;
+}
+
 /** Live totals in paise. Amounts that aren't valid yet count as 0. */
 export function computeTotals(d: BillDraft): Totals {
   const itemsSubtotal = d.items.reduce((sum, item) => sum + paiseOrZero(item.price), 0);
   const labour = paiseOrZero(d.labour);
   const painting = d.painting.selected ? paiseOrZero(d.painting.amount) : 0;
   const washing = d.washing.selected ? paiseOrZero(d.washing.amount) : 0;
-  return { itemsSubtotal, labour, painting, washing, grandTotal: itemsSubtotal + labour + painting + washing };
+  const gross = itemsSubtotal + labour + painting + washing;
+  const discount = Math.min(discountPaise(d.discount, gross), gross);
+  return { itemsSubtotal, labour, painting, washing, gross, discount, grandTotal: gross - discount };
 }
 
 /** What save_bill() expects. Amounts are decimal strings. */
@@ -84,9 +109,12 @@ export interface SaveBillPayload {
     vehicle_reg: string;
     date_received: string;
     expected_pickup: string | null;
+    delivered_on: string;
     labour_charge: string;
     painting_charge: string | null;
     washing_charge: string | null;
+    discount: string;
+    discount_percent: string | null;
   };
   items: { description: string; price: string }[];
   complaintIds: string[];
@@ -114,6 +142,10 @@ export function validateBill(
   const customer = validateCustomer(d, errors);
 
   if (!ISO_DATE.test(d.dateReceived)) errors.dateReceived = "Choose the date the vehicle was received.";
+  if (!ISO_DATE.test(d.deliveredOn)) errors.deliveredOn = "Choose the delivery date.";
+  else if (ISO_DATE.test(d.dateReceived) && d.deliveredOn < d.dateReceived)
+    errors.deliveredOn = "Delivery can't be before the date received.";
+
   if (d.expectedPickup && !ISO_DATE.test(d.expectedPickup)) errors.expectedPickup = "Choose a valid pickup date.";
   else if (d.expectedPickup && ISO_DATE.test(d.dateReceived) && d.expectedPickup < d.dateReceived)
     errors.expectedPickup = "Pickup date can't be before the date received.";
@@ -148,6 +180,23 @@ export function validateBill(
   const painting = optional(d.painting, "painting", "Painting");
   const washing = optional(d.washing, "washing", "Washing");
 
+  // Discount: optional; checked against the bill total before discount.
+  const totals = computeTotals(d);
+  let discount = 0;
+  let discountPercent: string | null = null;
+  if (d.discount.value.trim()) {
+    const p = parseAmount(d.discount.value);
+    if (d.discount.mode === "percent") {
+      if (!p.ok || p.paise === 0 || p.paise > 10000) errors.discount = "Enter a percentage between 0 and 100, e.g. 10.";
+      else {
+        discount = Math.round((totals.gross * p.paise) / 10000);
+        discountPercent = (p.paise / 100).toFixed(2);
+      }
+    } else if (!p.ok) errors.discount = amountMessage(p, "discount") ?? "Enter the discount.";
+    else discount = p.paise;
+    if (!errors.discount && discount > totals.gross) errors.discount = "The discount can't be more than the bill total.";
+  }
+
   if (Object.keys(errors).length > 0 || !labour.ok) return { errors, payload: null };
 
   return {
@@ -157,9 +206,12 @@ export function validateBill(
         ...customer,
         date_received: d.dateReceived,
         expected_pickup: d.expectedPickup || null,
+        delivered_on: d.deliveredOn,
         labour_charge: paiseToDecimal(labour.paise),
         painting_charge: painting,
         washing_charge: washing,
+        discount: paiseToDecimal(discount),
+        discount_percent: discount > 0 ? discountPercent : null,
       },
       items,
       complaintIds: [...new Set(d.complaintIds)],
@@ -179,6 +231,7 @@ export function billToDraft(bill: BillWithItems): BillDraft {
     vehicleReg: bill.vehicle_reg,
     dateReceived: bill.date_received,
     expectedPickup: bill.expected_pickup ?? "",
+    deliveredOn: bill.delivered_on,
     items: items.length > 0 ? items : [newItem()],
     labour: paiseToInput(rupeesToPaise(bill.labour_charge)),
     painting: {
@@ -189,6 +242,10 @@ export function billToDraft(bill: BillWithItems): BillDraft {
       selected: bill.washing_charge !== null,
       amount: bill.washing_charge !== null ? paiseToInput(rupeesToPaise(bill.washing_charge)) : "",
     },
+    discount:
+      bill.discount_percent !== null
+        ? { mode: "percent", value: String(Number(bill.discount_percent)) }
+        : { mode: "amount", value: Number(bill.discount) > 0 ? paiseToInput(rupeesToPaise(bill.discount)) : "" },
     complaintIds: (bill.complaints ?? []).map((c) => c.id),
   };
 }

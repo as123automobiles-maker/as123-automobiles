@@ -9,10 +9,16 @@ export interface BillRow {
   vehicle_reg: string;
   date_received: string;
   expected_pickup: string | null;
+  /** Date the vehicle was handed back (defaults to the bill date). */
+  delivered_on: string;
   labour_charge: number;
   painting_charge: number | null;
   washing_charge: number | null;
   items_subtotal: number;
+  /** Rupees taken off; grand_total is after it. */
+  discount: number;
+  /** Set when the discount was given as a percentage (for display). */
+  discount_percent: number | null;
   grand_total: number;
   created_at: string;
   updated_at: string;

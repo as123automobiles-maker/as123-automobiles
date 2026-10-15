@@ -24,7 +24,7 @@ export function BillCard({ bill, showCustomer = true }: { bill: BillWithComplain
         <span className="reg">{bill.vehicle_reg}</span>
         {showCustomer && <span>{bill.phone}</span>}
         <span>Received {formatDate(bill.date_received)}</span>
-        <span>Pickup {formatDate(bill.expected_pickup)}</span>
+        <span>Delivered {formatDate(bill.delivered_on)}</span>
       </div>
       <div className="result-links">
         {bill.complaints.length === 0 ? (

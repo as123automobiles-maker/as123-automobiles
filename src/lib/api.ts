@@ -205,7 +205,7 @@ export async function salesForRange(from: string, to: string): Promise<SaleRow[]
   for (let start = 0; ; start += PAGE) {
     const { data, error } = await supabase
       .from("bills")
-      .select("date_received, items_subtotal, labour_charge, painting_charge, washing_charge, grand_total, created_by")
+      .select("date_received, items_subtotal, labour_charge, painting_charge, washing_charge, grand_total, discount, created_by")
       .gte("date_received", from)
       .lte("date_received", to)
       .order("date_received")

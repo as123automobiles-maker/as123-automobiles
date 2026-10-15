@@ -30,7 +30,7 @@ function SummaryTiles({ s, view }: { s: SalesSummary; view: View }) {
   if (view === "combined")
     return (
       <div className="tiles">
-        <Tile strong label="Total sales (incl. labour)" value={formatINR(s.total)} sub={bills} />
+        <Tile strong label="Total sales (incl. labour)" value={formatINR(s.total)} sub={s.discount > 0 ? `${bills} · after ${formatINR(s.discount)} discount` : bills} />
         <Tile label="Excluding labour" value={formatINR(s.excludingLabour)} sub="Spares + painting & washing" />
       </div>
     );
@@ -40,6 +40,7 @@ function SummaryTiles({ s, view }: { s: SalesSummary; view: View }) {
       <Tile label="Spare parts" value={formatINR(s.spares)} sub="Parts & items on bills" />
       <Tile label="Labour charge" value={formatINR(s.labour)} />
       <Tile label="Painting & washing" value={formatINR(s.services)} />
+      {s.discount > 0 && <Tile label="Discounts given" value={`−${formatINR(s.discount)}`} sub="Already taken off the total" />}
     </div>
   );
 }
@@ -253,6 +254,7 @@ function SalesBody({
                       <th className="num">Spares</th>
                       <th className="num">Labour</th>
                       <th className="num">Painting & washing</th>
+                      <th className="num">Discount</th>
                     </>
                   ) : (
                     <th className="num">Excl. labour</th>
@@ -270,6 +272,7 @@ function SalesBody({
                         <td className="num">{formatINR(d.spares)}</td>
                         <td className="num">{formatINR(d.labour)}</td>
                         <td className="num">{formatINR(d.services)}</td>
+                        <td className="num">{d.discount > 0 ? `−${formatINR(d.discount)}` : "—"}</td>
                       </>
                     ) : (
                       <td className="num">{formatINR(d.excludingLabour)}</td>
@@ -289,6 +292,7 @@ function SalesBody({
                       <td className="num">{formatINR(monthTotal.spares)}</td>
                       <td className="num">{formatINR(monthTotal.labour)}</td>
                       <td className="num">{formatINR(monthTotal.services)}</td>
+                      <td className="num">{monthTotal.discount > 0 ? `−${formatINR(monthTotal.discount)}` : "—"}</td>
                     </>
                   ) : (
                     <td className="num">{formatINR(monthTotal.excludingLabour)}</td>

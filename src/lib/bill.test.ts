@@ -12,6 +12,7 @@ function filled(overrides: Partial<BillDraft> = {}): BillDraft {
     vehicleReg: "ka 01 ab 1234",
     dateReceived: "2026-10-14",
     expectedPickup: "2026-10-16",
+    deliveredOn: "2026-10-16",
     items: [newItem("Brake pads", "1,250"), newItem("Engine oil 3L", "899.50")],
     labour: "600",
     ...overrides,
@@ -54,6 +55,8 @@ describe("computeTotals", () => {
       labour: 60000,
       painting: 200000,
       washing: 0,
+      gross: 474950,
+      discount: 0,
       grandTotal: 474950,
     });
   });
@@ -74,9 +77,12 @@ describe("validateBill", () => {
         vehicle_reg: "KA 01 AB 1234",
         date_received: "2026-10-14",
         expected_pickup: "2026-10-16",
+        delivered_on: "2026-10-16",
         labour_charge: "600.00",
         painting_charge: null,
         washing_charge: "250.00",
+        discount: "0.00",
+        discount_percent: null,
       },
       items: [
         { description: "Brake pads", price: "1250.00" },
@@ -142,6 +148,9 @@ describe("billToDraft", () => {
       vehicle_reg_key: "KA01AB1234",
       date_received: "2026-10-14",
       expected_pickup: null,
+      delivered_on: "2026-10-15",
+      discount: 0,
+      discount_percent: null,
       labour_charge: 600,
       painting_charge: null,
       washing_charge: 250.5,
@@ -158,5 +167,69 @@ describe("billToDraft", () => {
     expect(d.painting.selected).toBe(false);
     expect(d.complaintIds).toEqual(["c1"]);
     expect(computeTotals(d).grandTotal).toBe(210050);
+  });
+});
+
+describe("delivery date", () => {
+  it("defaults to today, the bill date", () => {
+    expect(emptyBill().deliveredOn).toBe(emptyBill().dateReceived);
+  });
+
+  it("can't be before the date received", () => {
+    expect(validateBill(filled({ deliveredOn: "2026-10-13" }), strict).errors.deliveredOn).toMatch(/before/);
+    expect(validateBill(filled({ deliveredOn: "2026-10-14" }), strict).errors.deliveredOn).toBeUndefined();
+  });
+});
+
+describe("discount", () => {
+  // filled(): items ₹2,149.50 + labour ₹600 = ₹2,749.50 before discount.
+  it("takes a rupee amount off the total", () => {
+    const d = filled({ discount: { mode: "amount", value: "249.50" } });
+    expect(computeTotals(d)).toMatchObject({ gross: 274950, discount: 24950, grandTotal: 250000 });
+    expect(validateBill(d, strict).payload?.bill).toMatchObject({ discount: "249.50", discount_percent: null });
+  });
+
+  it("takes a percentage of the total, rounded to the paisa", () => {
+    const d = filled({ discount: { mode: "percent", value: "10" } });
+    expect(computeTotals(d)).toMatchObject({ discount: 27495, grandTotal: 247455 });
+    expect(validateBill(d, strict).payload?.bill).toMatchObject({ discount: "274.95", discount_percent: "10.00" });
+  });
+
+  it("is optional", () => {
+    expect(validateBill(filled({ discount: { mode: "amount", value: "" } }), strict).payload?.bill.discount).toBe("0.00");
+  });
+
+  it("can't be more than the bill or over 100%", () => {
+    expect(validateBill(filled({ discount: { mode: "amount", value: "5000" } }), strict).errors.discount).toMatch(/more than/);
+    expect(validateBill(filled({ discount: { mode: "percent", value: "120" } }), strict).errors.discount).toMatch(/between 0 and 100/);
+    expect(validateBill(filled({ discount: { mode: "amount", value: "abc" } }), strict).errors.discount).toBeTruthy();
+  });
+
+  it("round-trips a saved percentage discount for editing", () => {
+    const d = billToDraft({
+      id: "b",
+      bill_number: 1,
+      customer_name: "A",
+      address: null,
+      phone: "9876543210",
+      vehicle_reg: "KA01AB1234",
+      vehicle_reg_key: "KA01AB1234",
+      date_received: "2026-10-14",
+      expected_pickup: null,
+      delivered_on: "2026-10-15",
+      labour_charge: 600,
+      painting_charge: null,
+      washing_charge: null,
+      items_subtotal: 0,
+      discount: 60,
+      discount_percent: 10,
+      grand_total: 540,
+      created_at: "",
+      updated_at: "",
+      bill_items: [],
+      complaints: [],
+    });
+    expect(d.discount).toEqual({ mode: "percent", value: "10" });
+    expect(d.deliveredOn).toBe("2026-10-15");
   });
 });

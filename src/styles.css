@@ -2053,3 +2053,44 @@ h3 {
     display: none;
   }
 }
+
+/* ---------- Discount ---------- */
+
+.discount-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.discount-head label {
+  font-weight: 600;
+}
+
+.segmented-sm button {
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+.app .card .segmented {
+  background: #e3e8f1;
+}
+
+.money-input .suffix {
+  padding: 0 12px 0 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.discount-row dd {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.totals .discount-row dt,
+.bill-totals .discount-row dt {
+  color: var(--success);
+}

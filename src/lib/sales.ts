@@ -8,16 +8,19 @@ export interface SaleRow {
   painting_charge: number | null;
   washing_charge: number | null;
   grand_total: number;
+  /** Rupees taken off the bill (grand_total is after it). */
+  discount?: number;
   /** Staff login that created the bill. */
   created_by?: string | null;
 }
 
-/** Totals in paise. Spares = parts & items; services = painting + washing. */
+/** Totals in paise. Spares = parts & items; services = painting + washing. Total is after discounts. */
 export interface SalesSummary {
   bills: number;
   spares: number;
   labour: number;
   services: number;
+  discount: number;
   total: number;
   /** Total without labour (spares + painting + washing). */
   excludingLabour: number;
@@ -28,7 +31,7 @@ export interface DaySales extends SalesSummary {
 }
 
 export function emptySummary(): SalesSummary {
-  return { bills: 0, spares: 0, labour: 0, services: 0, total: 0, excludingLabour: 0 };
+  return { bills: 0, spares: 0, labour: 0, services: 0, discount: 0, total: 0, excludingLabour: 0 };
 }
 
 function add(s: SalesSummary, r: SaleRow): SalesSummary {
@@ -36,11 +39,13 @@ function add(s: SalesSummary, r: SaleRow): SalesSummary {
   const labour = rupeesToPaise(r.labour_charge);
   const services = rupeesToPaise(r.painting_charge ?? 0) + rupeesToPaise(r.washing_charge ?? 0);
   const total = rupeesToPaise(r.grand_total);
+  const discount = rupeesToPaise(r.discount ?? 0);
   return {
     bills: s.bills + 1,
     spares: s.spares + spares,
     labour: s.labour + labour,
     services: s.services + services,
+    discount: s.discount + discount,
     total: s.total + total,
     excludingLabour: s.excludingLabour + (total - labour),
   };

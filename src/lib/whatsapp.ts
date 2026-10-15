@@ -27,9 +27,9 @@ export function billMessage(bill: BillWithItems, shop: ShopSettings | null): str
     `Customer: ${bill.customer_name}`,
     `Vehicle: ${bill.vehicle_reg}`,
     `Received: ${formatDate(bill.date_received)}`,
+    `Delivered: ${formatDate(bill.delivered_on)}`,
+    "",
   ];
-  if (bill.expected_pickup) lines.push(`Expected pickup: ${formatDate(bill.expected_pickup)}`);
-  lines.push("");
   const complaints = [...(bill.complaints ?? [])].sort((a, b) => a.complaint_number - b.complaint_number);
   if (complaints.length > 0) {
     lines.push("*Your complaints*");
@@ -44,6 +44,8 @@ export function billMessage(bill: BillWithItems, shop: ShopSettings | null): str
   lines.push(`Labour charge: ${inr(bill.labour_charge)}`);
   if (bill.painting_charge !== null) lines.push(`Painting: ${inr(bill.painting_charge)}`);
   if (bill.washing_charge !== null) lines.push(`Washing: ${inr(bill.washing_charge)}`);
+  if (Number(bill.discount) > 0)
+    lines.push(`Discount${bill.discount_percent !== null ? ` (${Number(bill.discount_percent)}%)` : ""}: -${inr(bill.discount)}`);
   lines.push(`*Grand total: ${inr(bill.grand_total)}*`, "", "Thank you for your business.");
   if (shop?.phone) lines.push(`Contact: ${shop.phone}`);
   return lines.join("\n");

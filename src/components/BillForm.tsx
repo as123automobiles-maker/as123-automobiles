@@ -40,10 +40,12 @@ function firstErrorKey(errors: BillErrors, d: BillDraft): string | null {
     "address",
     "dateReceived",
     "expectedPickup",
+    "deliveredOn",
     ...d.items.flatMap((i) => [`item-${i.key}-description`, `item-${i.key}-price`]),
     "labour",
     "painting",
     "washing",
+    "discount",
   ];
   return order.find((k) => errors[k]) ?? null;
 }
@@ -168,6 +170,15 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
                 type="date"
                 value={draft.dateReceived}
                 onChange={(e) => set("dateReceived", e.target.value)}
+              />
+            </Field>
+            <Field fieldKey="deliveredOn" label="Delivered on" required error={shown.deliveredOn}>
+              <input
+                {...fieldProps("deliveredOn", shown.deliveredOn)}
+                type="date"
+                min={draft.dateReceived || undefined}
+                value={draft.deliveredOn}
+                onChange={(e) => set("deliveredOn", e.target.value)}
               />
             </Field>
             <Field fieldKey="expectedPickup" label="Expected pickup" error={shown.expectedPickup}>
@@ -304,6 +315,54 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
             </div>
           );
         })}
+        <div className={`service discount${shown.discount ? " has-error" : ""}`}>
+          <div className="discount-head">
+            <label htmlFor="f-discount">Discount</label>
+            <div className="segmented segmented-sm" role="group" aria-label="Discount type">
+              <button
+                type="button"
+                aria-pressed={draft.discount.mode === "amount"}
+                onClick={() => set("discount", { ...draft.discount, mode: "amount" })}
+              >
+                ₹ Amount
+              </button>
+              <button
+                type="button"
+                aria-pressed={draft.discount.mode === "percent"}
+                onClick={() => set("discount", { ...draft.discount, mode: "percent" })}
+              >
+                % of bill
+              </button>
+            </div>
+          </div>
+          {draft.discount.mode === "amount" ? (
+            <MoneyInput
+              {...fieldProps("discount", shown.discount)}
+              invalid={Boolean(shown.discount)}
+              className="money-short"
+              placeholder="0 (optional)"
+              value={draft.discount.value}
+              onChange={(e) => set("discount", { ...draft.discount, value: e.target.value })}
+            />
+          ) : (
+            <div className={`money-input money-short${shown.discount ? " invalid" : ""}`}>
+              <input
+                {...fieldProps("discount", shown.discount)}
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="0 (optional)"
+                value={draft.discount.value}
+                onChange={(e) => set("discount", { ...draft.discount, value: e.target.value })}
+              />
+              <span aria-hidden="true" className="suffix">%</span>
+            </div>
+          )}
+          {draft.discount.mode === "percent" && totals.discount > 0 && (
+            <p className="hint">= {formatINR(totals.discount)} off</p>
+          )}
+          <FieldError fieldKey="discount" error={shown.discount} />
+        </div>
       </section>
 
       <section className="card totals" aria-label="Bill total">
@@ -329,6 +388,15 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
             <div>
               <dt>Washing</dt>
               <dd>{formatINR(totals.washing)}</dd>
+            </div>
+          )}
+          {totals.discount > 0 && (
+            <div className="discount-row">
+              <dt>
+                Discount
+                {draft.discount.mode === "percent" ? ` (${draft.discount.value.trim()}%)` : ""}
+              </dt>
+              <dd>−{formatINR(totals.discount)}</dd>
             </div>
           )}
           <div className="grand">
