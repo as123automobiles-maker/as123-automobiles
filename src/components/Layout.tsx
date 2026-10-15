@@ -46,6 +46,9 @@ export default function Layout() {
             <NavLink to="/" end>
               New bill
             </NavLink>
+            <NavLink to="/complaints" end>
+              Complaints
+            </NavLink>
             <NavLink to="/bills">Find bills</NavLink>
             {me.me.role === "owner" && <NavLink to="/reports">Reports</NavLink>}
             {me.me.role === "owner" && <NavLink to="/settings">Settings</NavLink>}

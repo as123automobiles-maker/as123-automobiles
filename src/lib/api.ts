@@ -217,3 +217,19 @@ export async function salesForRange(from: string, to: string): Promise<SaleRow[]
     if (!data || data.length < PAGE) return rows;
   }
 }
+
+export const COMPLAINT_LIST_LIMIT = 300;
+
+/** Most recent complaints (with their bills), optionally only Open or Resolved. */
+export async function listComplaints(status?: ComplaintStatus): Promise<ComplaintWithBills[]> {
+  let query = supabase
+    .from("complaints")
+    .select(`*, ${BILL_SUMMARY}`)
+    .order("reported_on", { ascending: false })
+    .order("complaint_number", { ascending: false })
+    .limit(COMPLAINT_LIST_LIMIT);
+  if (status) query = query.eq("status", status);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as ComplaintWithBills[];
+}

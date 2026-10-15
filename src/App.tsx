@@ -7,6 +7,7 @@ import { configError } from "./lib/supabase";
 import BillSearch from "./pages/BillSearch";
 import BillView from "./pages/BillView";
 import { ComplaintView, EditComplaint, NewComplaint } from "./pages/ComplaintPages";
+import Complaints from "./pages/Complaints";
 import EditBill from "./pages/EditBill";
 import Login from "./pages/Login";
 import NewBill from "./pages/NewBill";
@@ -44,6 +45,7 @@ const router = createBrowserRouter(
         { path: "bills", element: <BillSearch /> },
         { path: "bills/:id", element: <BillView /> },
         { path: "bills/:id/edit", element: <EditBill /> },
+        { path: "complaints", element: <Complaints /> },
         { path: "complaints/new", element: <NewComplaint /> },
         { path: "complaints/:id", element: <ComplaintView /> },
         { path: "complaints/:id/edit", element: <EditComplaint /> },
