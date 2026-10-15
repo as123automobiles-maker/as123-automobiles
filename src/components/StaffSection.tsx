@@ -21,7 +21,8 @@ interface NewLogin {
 const emptyLogin: NewLogin = { full_name: "", username: "", password: "", role: "staff" };
 
 /** Owner-only: list, add and remove the people who can sign in. */
-export default function StaffSection() {
+/** Owner-only: the list of logins ("list") or the form to add one ("add"). */
+export default function StaffSection({ show }: { show: "list" | "add" }) {
   const me = useMe();
   const myId = me.status === "ok" ? me.me.user_id : null;
   const [staff, setStaff] = useState<StaffMember[] | null>(null);
@@ -163,8 +164,12 @@ export default function StaffSection() {
 
   return (
     <section className="card">
-      <h2>Staff logins</h2>
-      <p className="hint">People listed here can sign in and create bills. Owners can also change settings and manage logins.</p>
+      <h2>{show === "list" ? "Staff logins" : "Add a login"}</h2>
+      <p className="hint">
+        {show === "list"
+          ? "People listed here can sign in and create bills. Owners can also change settings and manage logins."
+          : "Give each person their own login, so complaints and bills are recorded under their name."}
+      </p>
 
       {notice && (
         <div className={`alert ${notice.kind === "success" ? "alert-success" : "alert-error"}`} role={notice.kind === "error" ? "alert" : "status"}>
@@ -172,7 +177,7 @@ export default function StaffSection() {
         </div>
       )}
 
-      {loadError ? (
+      {show === "list" && (loadError ? (
         <div className="alert alert-error" role="alert">
           <span>Couldn't load logins. {loadError}</span>
           <button type="button" className="btn btn-outline btn-sm" onClick={() => void load()}>
@@ -224,10 +229,10 @@ export default function StaffSection() {
             </li>
           ))}
         </ul>
-      )}
+      ))}
 
+      {show === "add" && (
       <form className="staff-add" onSubmit={onAdd} noValidate>
-        <h3>Add a login</h3>
         <div className="grid">
           <Field fieldKey="staff-full_name" label="Name" required error={formErrors.full_name}>
             <input
@@ -285,6 +290,7 @@ export default function StaffSection() {
           {adding ? "Adding…" : "Add login"}
         </button>
       </form>
+      )}
 
       {removing && (
         <ConfirmDialog

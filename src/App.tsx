@@ -55,6 +55,7 @@ const router = createBrowserRouter(
         { path: "reports", element: <Reports /> },
         { path: "sales", element: <Navigate to="/reports" replace /> },
         { path: "settings", element: <Settings /> },
+        { path: "settings/:section", element: <Settings /> },
       ],
     },
     { path: "*", element: <NotFound /> },

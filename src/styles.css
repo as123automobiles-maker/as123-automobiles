@@ -1942,3 +1942,114 @@ h3 {
   border-radius: 4px;
   background: #2a78d6;
 }
+
+/* ---------- Settings: groups and sub-groups ---------- */
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.settings-nav {
+  padding: 12px;
+  position: sticky;
+  top: 76px;
+}
+
+.settings-group + .settings-group {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-group-label {
+  margin: 4px 8px 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.settings-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.settings-link {
+  display: grid;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+}
+
+.settings-link span {
+  font-weight: 600;
+}
+
+.settings-link small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.settings-link:hover {
+  background: #f3f6fb;
+}
+
+.settings-link.active {
+  background: var(--primary-soft);
+  border-left-color: var(--primary);
+}
+
+.settings-link.active span {
+  color: var(--primary);
+}
+
+.settings-content > .card,
+.settings-content > form > .card {
+  margin-bottom: 0;
+}
+
+.settings-content .staff-add {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.settings-save {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  margin-top: 8px;
+}
+
+.settings-save .alert {
+  margin: 0;
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .settings-nav {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .settings-group + .settings-group {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+  .settings-link small {
+    display: none;
+  }
+}
