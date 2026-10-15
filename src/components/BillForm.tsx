@@ -199,6 +199,7 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
         selected={draft.complaintIds}
         onChange={(ids) => set("complaintIds", ids)}
         billId={billId}
+        onUseVehicle={(reg) => set("vehicleReg", reg)}
       />
 
       <section className="card">

@@ -2094,3 +2094,11 @@ h3 {
 .bill-totals .discount-row dt {
   color: var(--success);
 }
+
+.mismatch-line {
+  margin: 2px 0;
+}
+
+.mismatch-line .btn {
+  margin-left: 6px;
+}

@@ -275,3 +275,28 @@ export async function setStaffName(userId: string, name: string): Promise<void> 
   const { error } = await supabase.rpc("set_staff_name", { p_user: userId, p_name: name });
   if (error) throw error;
 }
+
+export type ComplaintBrief = Pick<ComplaintRow, "id" | "complaint_number" | "vehicle_reg" | "vehicle_reg_key" | "description" | "reported_on">;
+const BRIEF = "id, complaint_number, vehicle_reg, vehicle_reg_key, description, reported_on";
+
+/** Complaint numbers and vehicles for the given ids (to explain links that don't match a bill's vehicle). */
+export async function complaintsByIds(ids: string[]): Promise<ComplaintBrief[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.from("complaints").select(BRIEF).in("id", ids);
+  if (error) throw error;
+  return (data ?? []) as ComplaintBrief[];
+}
+
+/** Open complaints from this phone number recorded under a different vehicle number (likely a typo). */
+export async function openComplaintsForPhoneElsewhere(phoneDigits: string, vehicleKey: string): Promise<ComplaintBrief[]> {
+  const { data, error } = await supabase
+    .from("complaints")
+    .select(BRIEF)
+    .eq("phone_digits", phoneDigits)
+    .eq("status", "open")
+    .neq("vehicle_reg_key", vehicleKey)
+    .order("reported_on", { ascending: false })
+    .limit(5);
+  if (error) throw error;
+  return (data ?? []) as ComplaintBrief[];
+}
