@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useLocation } from "react-router";
-import Logo from "../components/Logo";
 import { useAuth } from "../lib/auth";
 import { errorMessage, isRemembered, rememberedEmail, setRememberMe, supabase } from "../lib/supabase";
 
@@ -37,8 +36,8 @@ export default function Login() {
     <main className="login">
       <form className="card login-card" onSubmit={onSubmit} noValidate>
         <div className="login-brand">
-          <Logo size={52} />
-          <h1>Workshop Billing</h1>
+          <h1 className="sr-only">Pitstop Plus</h1>
+          <img src={`${import.meta.env.BASE_URL}pitstop-plus.svg`} alt="Pitstop Plus" className="login-logo" />
           <p className="hint">Sign in to create and find bills.</p>
         </div>
         {error && (

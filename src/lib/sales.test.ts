@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysInMonth, monthRange, salesByDay, shiftDay, shiftMonth, summarize, type SaleRow } from "./sales";
+import { daysInMonth, monthRange, salesByDay, salesForLastDays, shiftDay, shiftMonth, summarize, type SaleRow } from "./sales";
 
 const row = (date: string, spares: number, labour: number, painting: number | null = null, washing: number | null = null): SaleRow => ({
   date_received: date,
@@ -54,5 +54,16 @@ describe("dates", () => {
     expect(shiftMonth("2026-12", 1)).toBe("2027-01");
     expect(shiftDay("2026-10-31", 1)).toBe("2026-11-01");
     expect(shiftDay("2026-03-01", -1)).toBe("2026-02-28");
+  });
+});
+
+describe("salesForLastDays", () => {
+  it("covers the last N days up to and including the end date, oldest first", () => {
+    const days = salesForLastDays([row("2026-10-15", 100, 50), row("2026-10-02", 10, 5), row("2026-10-01", 1, 1)], "2026-10-15", 14);
+    expect(days).toHaveLength(14);
+    expect(days[0].date).toBe("2026-10-02");
+    expect(days[0].total).toBe(1500);
+    expect(days[13]).toMatchObject({ date: "2026-10-15", total: 15000, bills: 1 });
+    expect(days.some((d) => d.date === "2026-10-01")).toBe(false);
   });
 });

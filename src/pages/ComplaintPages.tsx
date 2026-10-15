@@ -116,7 +116,7 @@ export function ComplaintView() {
           <button type="button" className="btn btn-outline" onClick={() => void toggleStatus()} disabled={statusBusy}>
             {statusBusy ? "Saving…" : status === "open" ? "Mark resolved" : "Reopen"}
           </button>
-          <Link to="/" state={{ prefill: billPrefill }} className="btn btn-primary">
+          <Link to="/bills/new" state={{ prefill: billPrefill }} className="btn btn-primary">
             Create bill for this complaint
           </Link>
         </div>
@@ -181,7 +181,7 @@ export function ComplaintView() {
         {bills.length === 0 ? (
           <p className="muted">
             No bill yet for this complaint.{" "}
-            <Link to="/" state={{ prefill: billPrefill }}>
+            <Link to="/bills/new" state={{ prefill: billPrefill }}>
               Create one
             </Link>{" "}
             when the work is done.

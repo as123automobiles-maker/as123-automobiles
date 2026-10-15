@@ -61,7 +61,7 @@ export default function BillView() {
       {justSaved && (
         <div className="alert alert-success no-print" role="status">
           Bill #{bill.bill_number} saved.{" "}
-          <Link to="/" className="link-button">
+          <Link to="/bills/new" className="link-button">
             Start a new bill
           </Link>
         </div>

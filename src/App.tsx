@@ -5,6 +5,7 @@ import { ShopSettingsProvider } from "./lib/shopSettings";
 import { MeProvider } from "./lib/staff";
 import { configError } from "./lib/supabase";
 import BillSearch from "./pages/BillSearch";
+import Dashboard from "./pages/Dashboard";
 import BillView from "./pages/BillView";
 import { ComplaintView, EditComplaint, NewComplaint } from "./pages/ComplaintPages";
 import Complaints from "./pages/Complaints";
@@ -20,7 +21,7 @@ function NotFound() {
     <main className="container empty">
       <h1>Page not found</h1>
       <Link to="/" className="btn btn-primary">
-        Go to New bill
+        Go to the dashboard
       </Link>
     </main>
   );
@@ -41,7 +42,8 @@ const router = createBrowserRouter(
         </RequireAuth>
       ),
       children: [
-        { index: true, element: <NewBill /> },
+        { index: true, element: <Dashboard /> },
+        { path: "bills/new", element: <NewBill /> },
         { path: "bills", element: <BillSearch /> },
         { path: "bills/:id", element: <BillView /> },
         { path: "bills/:id/edit", element: <EditBill /> },

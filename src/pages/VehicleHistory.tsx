@@ -75,7 +75,7 @@ export default function VehicleHistory() {
           <Link to="/complaints/new" state={{ prefill: customer ?? { vehicleReg: key } }} className="btn btn-outline">
             New complaint
           </Link>
-          <Link to="/" state={{ prefill: billPrefill }} className="btn btn-primary">
+          <Link to="/bills/new" state={{ prefill: billPrefill }} className="btn btn-primary">
             New bill
           </Link>
         </div>

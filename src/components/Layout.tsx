@@ -15,8 +15,7 @@ export default function Layout() {
       <main className="login">
         <div className="card login-card">
           <div className="login-brand">
-            <Logo size={48} />
-            <h1>Workshop Billing</h1>
+            <img src={`${import.meta.env.BASE_URL}pitstop-plus.svg`} alt="Pitstop Plus" className="login-logo" />
           </div>
           {me.status === "not-staff" ? (
             <p>Your login isn't on the workshop's staff list yet. Ask the owner to add you in Settings.</p>
@@ -37,19 +36,22 @@ export default function Layout() {
     <div className="app">
       <header className="topbar no-print">
         <div className="topbar-inner">
-          <NavLink to="/bills" className="brand">
+          <NavLink to="/" className="brand">
             <Logo size={30} />
             <span>{settings?.shop_name || "Workshop Billing"}</span>
           </NavLink>
           <nav className="nav">
-            <NavLink to="/complaints/new">New complaint</NavLink>
             <NavLink to="/" end>
-              New bill
+              Dashboard
             </NavLink>
+            <NavLink to="/complaints/new">New complaint</NavLink>
+            <NavLink to="/bills/new">New bill</NavLink>
             <NavLink to="/complaints" end>
               Complaints
             </NavLink>
-            <NavLink to="/bills">Find bills</NavLink>
+            <NavLink to="/bills" end>
+              Find bills
+            </NavLink>
             {me.me.role === "owner" && <NavLink to="/reports">Reports</NavLink>}
             {me.me.role === "owner" && <NavLink to="/settings">Settings</NavLink>}
             <button type="button" className="link-button" onClick={signOut}>

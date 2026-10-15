@@ -112,7 +112,7 @@ export default function BillSearch() {
                   ) : (
                     <>
                       <p>No bills yet.</p>
-                      <Link to="/" className="btn btn-primary">
+                      <Link to="/bills/new" className="btn btn-primary">
                         Create the first bill
                       </Link>
                     </>

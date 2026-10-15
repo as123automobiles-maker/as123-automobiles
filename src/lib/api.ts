@@ -233,3 +233,21 @@ export async function listComplaints(status?: ComplaintStatus): Promise<Complain
   if (error) throw error;
   return (data ?? []) as ComplaintWithBills[];
 }
+
+export async function countOpenComplaints(): Promise<number> {
+  const { count, error } = await supabase
+    .from("complaints")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "open");
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function countBillsOn(date: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("bills")
+    .select("id", { count: "exact", head: true })
+    .eq("date_received", date);
+  if (error) throw error;
+  return count ?? 0;
+}

@@ -85,3 +85,13 @@ export function shiftDay(date: string, delta: number): string {
   d.setUTCDate(d.getUTCDate() + delta);
   return d.toISOString().slice(0, 10);
 }
+
+/** One entry per day for `count` days ending on `to` (inclusive), oldest first. */
+export function salesForLastDays(rows: SaleRow[], to: string, count: number): DaySales[] {
+  const byDate = new Map<string, SaleRow[]>();
+  for (const r of rows) byDate.set(r.date_received, [...(byDate.get(r.date_received) ?? []), r]);
+  return Array.from({ length: count }, (_, i) => {
+    const date = shiftDay(to, i - count + 1);
+    return { date, ...summarize(byDate.get(date) ?? []) };
+  });
+}
