@@ -153,7 +153,7 @@ export async function updateShopSettings(s: ShopSettings): Promise<void> {
 export async function listStaff(): Promise<StaffMember[]> {
   const { data, error } = await supabase
     .from("staff")
-    .select("user_id, email, full_name, role, created_at")
+    .select("user_id, email, username, full_name, role, created_at")
     .order("role")
     .order("full_name");
   if (error) throw error;
@@ -180,8 +180,13 @@ async function manageStaff(body: Record<string, unknown>): Promise<void> {
   );
 }
 
-export function addStaff(input: { full_name: string; email: string; password: string; role: StaffRole }) {
+export function addStaff(input: { full_name: string; username: string; password: string; role: StaffRole }) {
   return manageStaff({ action: "create", ...input });
+}
+
+/** Changes what someone types to sign in (owner only). */
+export function setStaffUsername(userId: string, username: string) {
+  return manageStaff({ action: "set_username", user_id: userId, username });
 }
 
 export function removeStaff(userId: string) {

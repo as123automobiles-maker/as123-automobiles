@@ -78,7 +78,7 @@ export function errorMessage(err: unknown): string {
   if (!err) return "Something went wrong.";
   const e = err as { message?: string; code?: string };
   if (e.message?.includes("Failed to fetch")) return "Network error. Check your internet connection and try again.";
-  if (e.message === "Invalid login credentials") return "Wrong email or password.";
+  if (e.message === "Invalid login credentials") return "Wrong username or password.";
   // Messages raised by save_bill() are already written for staff.
   if (e.code === "22023" || e.code === "P0002" || e.code === "42501") return e.message || "Something went wrong.";
   if (e.code === "23514") return "Some details are not valid. Check the highlighted fields and try again.";

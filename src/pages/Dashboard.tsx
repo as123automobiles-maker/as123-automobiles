@@ -42,7 +42,7 @@ export default function Dashboard() {
   const isOwner = useIsOwner();
   const { settings } = useShopSettings();
   const today = todayISO();
-  const name = me.status === "ok" ? me.me.full_name || me.me.email.split("@")[0] : "";
+  const name = me.status === "ok" ? me.me.full_name || me.me.username : "";
 
   const counts = useLoad(`counts|${today}`, () => Promise.all([countOpenComplaints(), countBillsOn(today)]));
 

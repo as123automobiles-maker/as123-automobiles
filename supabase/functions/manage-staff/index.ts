@@ -1,4 +1,6 @@
-// Owner-only login management: add, remove, and reset passwords for staff.
+// Owner-only login management: add, remove, change usernames and reset passwords.
+// Staff sign in with a username; Supabase Auth needs an email, so each login's
+// email is <username>@pitstop.invalid (".invalid" can never receive mail).
 // Runs server-side so the service-role key never reaches the browser.
 // Every call re-checks that the caller is the workshop owner.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -16,8 +18,13 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
+const LOGIN_DOMAIN = "pitstop.invalid";
 const MIN_PASSWORD = 8;
+const USERNAME_ERROR =
+  "Usernames are 3-30 characters: lowercase letters, numbers, dots, dashes or underscores, starting with a letter or number.";
+
+const loginEmail = (username: string) => `${username}@${LOGIN_DOMAIN}`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -52,15 +59,18 @@ Deno.serve(async (req) => {
   try {
     switch (body.action) {
       case "create": {
-        const email = String(body.email ?? "").trim().toLowerCase();
+        const username = String(body.username ?? "").trim().toLowerCase();
+        const email = loginEmail(username);
         const password = String(body.password ?? "");
         const fullName = String(body.full_name ?? "").trim().slice(0, 100);
         const role = body.role === "owner" ? "owner" : "staff";
 
         if (!fullName) return json({ error: "Enter the person's name." }, 400);
-        if (!EMAIL_RE.test(email)) return json({ error: "Enter a valid email address." }, 400);
+        if (!USERNAME_RE.test(username)) return json({ error: USERNAME_ERROR }, 400);
         if (password.length < MIN_PASSWORD)
           return json({ error: `Password must be at least ${MIN_PASSWORD} characters.` }, 400);
+        const { data: taken } = await admin.from("staff").select("user_id").eq("username", username).maybeSingle();
+        if (taken) return json({ error: "That username is already taken." }, 409);
 
         const { data: created, error: createError } = await admin.auth.admin.createUser({
           email,
@@ -71,13 +81,13 @@ Deno.serve(async (req) => {
         if (createError || !created.user) {
           const msg = createError?.message ?? "Could not create the login.";
           if (/already|registered|exists/i.test(msg))
-            return json({ error: "A login with this email already exists." }, 409);
+            return json({ error: "That username is already taken." }, 409);
           return json({ error: msg }, 400);
         }
 
         const { error: staffError } = await admin
           .from("staff")
-          .upsert({ user_id: created.user.id, email, full_name: fullName, role });
+          .upsert({ user_id: created.user.id, email, username, full_name: fullName, role });
         if (staffError) {
           // Don't leave a login that can't use the app.
           await admin.auth.admin.deleteUser(created.user.id);
@@ -94,6 +104,20 @@ Deno.serve(async (req) => {
         const { error } = await admin.auth.admin.deleteUser(userId);
         if (error && !/not found/i.test(error.message)) return json({ error: error.message }, 400);
         await admin.from("staff").delete().eq("user_id", userId);
+        return json({ ok: true });
+      }
+
+      case "set_username": {
+        const userId = String(body.user_id ?? "");
+        const username = String(body.username ?? "").trim().toLowerCase();
+        if (!userId) return json({ error: "Missing user." }, 400);
+        if (!USERNAME_RE.test(username)) return json({ error: USERNAME_ERROR }, 400);
+        const { data: taken } = await admin.from("staff").select("user_id").eq("username", username).maybeSingle();
+        if (taken && taken.user_id !== userId) return json({ error: "That username is already taken." }, 409);
+        const { error } = await admin.auth.admin.updateUserById(userId, { email: loginEmail(username), email_confirm: true });
+        if (error) return json({ error: error.message }, 400);
+        const { error: staffError } = await admin.from("staff").update({ username }).eq("user_id", userId);
+        if (staffError) return json({ error: staffError.message }, 500);
         return json({ ok: true });
       }
 

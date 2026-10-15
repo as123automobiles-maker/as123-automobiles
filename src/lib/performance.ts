@@ -20,8 +20,8 @@ export interface StaffPerformance {
   spares: number;
 }
 
-export function staffName(s: Pick<StaffMember, "full_name" | "email">): string {
-  return s.full_name.trim() || s.email.split("@")[0];
+export function staffName(s: Pick<StaffMember, "full_name" | "username">): string {
+  return s.full_name.trim() || s.username;
 }
 
 /**

@@ -45,7 +45,7 @@ export function NewComplaint() {
     const prefill = (location.state as { prefill?: Partial<CustomerFields> } | null)?.prefill;
     return emptyComplaint(prefill ?? {});
   });
-  const name = me.status === "ok" ? me.me.full_name.trim() || me.me.email.split("@")[0] : "";
+  const name = me.status === "ok" ? me.me.full_name.trim() || me.me.username : "";
   return <ComplaintForm initial={initial} title="New complaint" attendedBy={name} />;
 }
 

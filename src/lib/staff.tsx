@@ -23,7 +23,7 @@ export function MeProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     supabase
       .from("staff")
-      .select("user_id, email, full_name, role, created_at")
+      .select("user_id, email, username, full_name, role, created_at")
       .eq("user_id", userId)
       .maybeSingle()
       .then(({ data, error }) => {

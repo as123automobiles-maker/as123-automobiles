@@ -4,9 +4,9 @@ import type { SaleRow } from "./sales";
 import type { StaffMember } from "./types";
 
 const staff: StaffMember[] = [
-  { user_id: "u1", email: "owner@shop.in", full_name: "", role: "owner", created_at: "" },
-  { user_id: "u2", email: "sudhi@shop.in", full_name: "Sudhi", role: "staff", created_at: "" },
-  { user_id: "u3", email: "anu@shop.in", full_name: "Anu", role: "staff", created_at: "" },
+  { user_id: "u1", email: "owner@shop.in", username: "owner", full_name: "", role: "owner", created_at: "" },
+  { user_id: "u2", email: "sudhi@shop.in", username: "sudhi", full_name: "Sudhi", role: "staff", created_at: "" },
+  { user_id: "u3", email: "anu@shop.in", username: "anu", full_name: "Anu", role: "staff", created_at: "" },
 ];
 
 const bill = (by: string | null, spares: number, labour: number): SaleRow => ({

@@ -77,7 +77,10 @@ export type StaffRole = "owner" | "staff";
 
 export interface StaffMember {
   user_id: string;
+  /** Contact email, or the internal sign-in address for logins created with a username. */
   email: string;
+  /** What they type to sign in. */
+  username: string;
   full_name: string;
   role: StaffRole;
   created_at: string;

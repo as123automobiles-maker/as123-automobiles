@@ -2,12 +2,18 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useLocation } from "react-router";
 import { useAuth } from "../lib/auth";
 import { errorMessage, isRemembered, rememberedEmail, setRememberMe, supabase } from "../lib/supabase";
+import { loginEmail, normalizeUsername } from "../lib/username";
+
+/** Remembered sign-in name; older versions saved an email, whose first part is the username. */
+function rememberedUsername(): string {
+  return rememberedEmail().split("@")[0];
+}
 
 export default function Login() {
   const { session, loading } = useAuth();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from || "/";
-  const [email, setEmail] = useState(rememberedEmail);
+  const [email, setEmail] = useState(rememberedUsername);
   const [remember, setRemember] = useState(isRemembered);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,14 +24,15 @@ export default function Login() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !password) {
-      setError("Enter your email and password.");
+    const username = normalizeUsername(email);
+    if (!username || !password) {
+      setError("Enter your username and password.");
       return;
     }
     setBusy(true);
     setError(null);
-    setRememberMe(remember, email.trim());
-    const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setRememberMe(remember, username);
+    const { error: err } = await supabase.auth.signInWithPassword({ email: loginEmail(username), password });
     if (err) {
       setError(errorMessage(err));
       setBusy(false);
@@ -46,11 +53,13 @@ export default function Login() {
           </div>
         )}
         <div className="field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">Username</label>
           <input
             id="email"
-            type="email"
+            type="text"
             autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
             autoFocus={!email}
             value={email}
             onChange={(e) => setEmail(e.target.value)}

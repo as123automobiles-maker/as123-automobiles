@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { addStaff, listStaff, removeStaff, resetStaffPassword, setStaffName } from "../lib/api";
+import { addStaff, listStaff, removeStaff, resetStaffPassword, setStaffName, setStaffUsername } from "../lib/api";
 import { useMe } from "../lib/staff";
 import { errorMessage } from "../lib/supabase";
 import type { StaffMember, StaffRole } from "../lib/types";
+import { normalizeUsername, USERNAME_HINT, usernameError } from "../lib/username";
 import ConfirmDialog from "./ConfirmDialog";
 import { Field, fieldProps } from "./fields";
 
 const MIN_PASSWORD = 8;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Notice = { kind: "success" | "error"; text: string } | null;
 
 interface NewLogin {
   full_name: string;
-  email: string;
+  username: string;
   password: string;
   role: StaffRole;
 }
 
-const emptyLogin: NewLogin = { full_name: "", email: "", password: "", role: "staff" };
+const emptyLogin: NewLogin = { full_name: "", username: "", password: "", role: "staff" };
 
 /** Owner-only: list, add and remove the people who can sign in. */
 export default function StaffSection() {
@@ -34,7 +34,7 @@ export default function StaffSection() {
   const [removing, setRemoving] = useState<StaffMember | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<{ member: StaffMember; password: string; error?: string } | null>(null);
-  const [renaming, setRenaming] = useState<{ member: StaffMember; name: string; error?: string } | null>(null);
+  const [renaming, setRenaming] = useState<{ member: StaffMember; name: string; username: string; error?: string; usernameError?: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -52,7 +52,8 @@ export default function StaffSection() {
   function validate(f: NewLogin) {
     const errs: Partial<Record<keyof NewLogin, string>> = {};
     if (!f.full_name.trim()) errs.full_name = "Enter the person's name.";
-    if (!EMAIL_RE.test(f.email.trim())) errs.email = "Enter a valid email address.";
+    const uErr = usernameError(f.username);
+    if (uErr) errs.username = uErr;
     if (f.password.length < MIN_PASSWORD) errs.password = `Use at least ${MIN_PASSWORD} characters.`;
     return errs;
   }
@@ -62,17 +63,17 @@ export default function StaffSection() {
     const errs = validate(form);
     setFormErrors(errs);
     setNotice(null);
-    const first = (["full_name", "email", "password"] as const).find((k) => errs[k]);
+    const first = (["full_name", "username", "password"] as const).find((k) => errs[k]);
     if (first) {
       document.getElementById(`f-staff-${first}`)?.focus();
       return;
     }
     setAdding(true);
     try {
-      await addStaff({ ...form, full_name: form.full_name.trim(), email: form.email.trim().toLowerCase() });
+      await addStaff({ ...form, full_name: form.full_name.trim(), username: normalizeUsername(form.username) });
       setNotice({
         kind: "success",
-        text: `${form.full_name.trim()} can now sign in with ${form.email.trim().toLowerCase()} and the password you set. Share the password with them privately.`,
+        text: `${form.full_name.trim()} can now sign in with the username ${normalizeUsername(form.username)} and the password you set. Share the password with them privately.`,
       });
       setForm(emptyLogin);
       setShowPassword(false);
@@ -92,7 +93,7 @@ export default function StaffSection() {
     setNotice(null);
     try {
       await removeStaff(member.user_id);
-      setNotice({ kind: "success", text: `${member.full_name || member.email} can no longer sign in. Their bills are kept.` });
+      setNotice({ kind: "success", text: `${member.full_name || member.username} can no longer sign in. Their bills are kept.` });
       await load();
     } catch (err) {
       setNotice({ kind: "error", text: `Couldn't remove the login. ${errorMessage(err)}` });
@@ -114,7 +115,7 @@ export default function StaffSection() {
     setNotice(null);
     try {
       await resetStaffPassword(member.user_id, password);
-      setNotice({ kind: "success", text: `Password changed for ${member.full_name || member.email}.` });
+      setNotice({ kind: "success", text: `Password changed for ${member.full_name || member.username}.` });
     } catch (err) {
       setNotice({ kind: "error", text: `Couldn't change the password. ${errorMessage(err)}` });
     } finally {
@@ -126,8 +127,11 @@ export default function StaffSection() {
     e.preventDefault();
     if (!renaming) return;
     const name = renaming.name.trim();
-    if (!name || name.length > 100) {
-      setRenaming({ ...renaming, error: "Enter a name (up to 100 characters)." });
+    const username = normalizeUsername(renaming.username);
+    const nameErr = !name || name.length > 100 ? "Enter a name (up to 100 characters)." : undefined;
+    const uErr = usernameError(username) ?? undefined;
+    if (nameErr || uErr) {
+      setRenaming({ ...renaming, error: nameErr, usernameError: uErr });
       return;
     }
     const { member } = renaming;
@@ -135,10 +139,17 @@ export default function StaffSection() {
     setBusyId(member.user_id);
     setNotice(null);
     try {
-      await setStaffName(member.user_id, name);
+      if (name !== member.full_name) await setStaffName(member.user_id, name);
+      const usernameChanged = username !== member.username;
+      if (usernameChanged) await setStaffUsername(member.user_id, username);
+      const who = member.user_id === myId ? "You" : name;
       setNotice({
         kind: "success",
-        text: member.user_id === myId ? `Your name is now ${name}. Reload the page to see it everywhere.` : `Renamed to ${name}.`,
+        text: usernameChanged
+          ? `Saved. ${who} now sign${who === "You" ? "" : "s"} in with the username ${username}.`
+          : member.user_id === myId
+            ? `Your name is now ${name}. Reload the page to see it everywhere.`
+            : `Renamed to ${name}.`,
       });
       await load();
     } catch (err) {
@@ -175,19 +186,19 @@ export default function StaffSection() {
           {staff.map((m) => (
             <li key={m.user_id} className="staff-row">
               <div className="staff-info">
-                <strong>{m.full_name || m.email}</strong>
+                <strong>{m.full_name || m.username}</strong>
                 {m.user_id === myId && <span className="badge">You</span>}
                 <span className={`badge ${m.role === "owner" ? "badge-owner" : ""}`}>{m.role === "owner" ? "Owner" : "Staff"}</span>
-                <div className="muted staff-email">{m.email}</div>
+                <div className="muted staff-email">Username: {m.username}</div>
               </div>
               <div className="staff-actions">
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
                   disabled={busyId === m.user_id}
-                  onClick={() => setRenaming({ member: m, name: m.full_name })}
+                  onClick={() => setRenaming({ member: m, name: m.full_name, username: m.username })}
                 >
-                  Edit name
+                  Edit name & username
                 </button>
                 {m.user_id !== myId && (
                   <>
@@ -227,13 +238,15 @@ export default function StaffSection() {
               onChange={(e) => set({ full_name: e.target.value })}
             />
           </Field>
-          <Field fieldKey="staff-email" label="Email" required error={formErrors.email}>
+          <Field fieldKey="staff-username" label="Username" required error={formErrors.username} hint={`Used to sign in. ${USERNAME_HINT}`}>
             <input
-              {...fieldProps("staff-email", formErrors.email)}
-              type="email"
+              {...fieldProps("staff-username", formErrors.username)}
+              type="text"
+              autoCapitalize="none"
+              spellCheck={false}
               autoComplete="off"
-              value={form.email}
-              onChange={(e) => set({ email: e.target.value })}
+              value={form.username}
+              onChange={(e) => set({ username: e.target.value })}
             />
           </Field>
           <Field
@@ -275,7 +288,7 @@ export default function StaffSection() {
 
       {removing && (
         <ConfirmDialog
-          title={`Remove ${removing.full_name || removing.email}?`}
+          title={`Remove ${removing.full_name || removing.username}?`}
           message="They will no longer be able to sign in. Bills they created are kept."
           cancelLabel="Keep login"
           confirmLabel="Remove login"
@@ -287,8 +300,8 @@ export default function StaffSection() {
       {renaming && (
         <div className="modal-backdrop" role="presentation">
           <form className="modal" role="dialog" aria-modal="true" aria-labelledby="rename-title" onSubmit={onRename} noValidate>
-            <h2 id="rename-title">{renaming.member.user_id === myId ? "Your name" : `Rename ${renaming.member.full_name || renaming.member.email}`}</h2>
-            <p className="hint">Shown as "Attended by" on complaints and in staff reports. Past complaints update too.</p>
+            <h2 id="rename-title">{renaming.member.user_id === myId ? "Your name & username" : `Edit ${renaming.member.full_name || renaming.member.username}`}</h2>
+            <p className="hint">The name is shown as "Attended by" on complaints and in staff reports; past complaints update too.</p>
             <div className={`field${renaming.error ? " has-error" : ""}`}>
               <label htmlFor="f-rename">Name</label>
               <input
@@ -305,12 +318,30 @@ export default function StaffSection() {
                 </p>
               )}
             </div>
+            <div className={`field${renaming.usernameError ? " has-error" : ""}`}>
+              <label htmlFor="f-rename-username">Username (used to sign in)</label>
+              <input
+                {...fieldProps("rename-username", renaming.usernameError)}
+                type="text"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={renaming.username}
+                onChange={(e) => setRenaming({ ...renaming, username: e.target.value, usernameError: undefined })}
+              />
+              <p className="hint">{USERNAME_HINT}</p>
+              {renaming.usernameError && (
+                <p className="field-error" id="f-rename-username-error">
+                  {renaming.usernameError}
+                </p>
+              )}
+            </div>
             <div className="modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setRenaming(null)}>
                 Cancel
               </button>
               <button type="submit" className="btn btn-primary">
-                Save name
+                Save
               </button>
             </div>
           </form>
@@ -320,7 +351,7 @@ export default function StaffSection() {
       {resetting && (
         <div className="modal-backdrop" role="presentation">
           <form className="modal" role="dialog" aria-modal="true" aria-labelledby="reset-title" onSubmit={onReset} noValidate>
-            <h2 id="reset-title">Change password for {resetting.member.full_name || resetting.member.email}</h2>
+            <h2 id="reset-title">Change password for {resetting.member.full_name || resetting.member.username}</h2>
             <div className={`field${resetting.error ? " has-error" : ""}`}>
               <label htmlFor="f-reset-password">New password</label>
               <input
