@@ -38,7 +38,11 @@ export function billMessage(bill: BillWithItems, shop: ShopSettings | null): str
   }
   if (items.length > 0) {
     lines.push("*Parts & work*");
-    items.forEach((item, i) => lines.push(`${i + 1}. ${item.description}: ${inr(item.price)}`));
+    items.forEach((item, i) => {
+      const qty = Number(item.quantity ?? 1);
+      const amount = inr(item.line_total ?? item.price);
+      lines.push(qty === 1 ? `${i + 1}. ${item.description}: ${amount}` : `${i + 1}. ${item.description}: ${qty} × ${inr(item.price)} = ${amount}`);
+    });
     lines.push(`Items subtotal: ${inr(bill.items_subtotal)}`, "");
   }
   lines.push(`Labour charge: ${inr(bill.labour_charge)}`);

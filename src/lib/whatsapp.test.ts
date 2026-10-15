@@ -24,8 +24,8 @@ const bill: BillWithItems = {
   created_at: "",
   updated_at: "",
   bill_items: [
-    { id: "2", bill_id: "b1", position: 1, description: "Engine oil 3L", price: 899.5 },
-    { id: "1", bill_id: "b1", position: 0, description: "Brake pads", price: 1250 },
+    { id: "2", bill_id: "b1", position: 1, description: "Engine oil 3L", quantity: 1, price: 899.5, line_total: 899.5 },
+    { id: "1", bill_id: "b1", position: 0, description: "Brake pads", quantity: 1, price: 1250, line_total: 1250 },
   ],
 };
 
@@ -63,5 +63,15 @@ describe("whatsappLink", () => {
     const link = whatsappLink(bill, shop)!;
     expect(link.startsWith("https://wa.me/919876543210?text=")).toBe(true);
     expect(decodeURIComponent(link.split("?text=")[1])).toBe(billMessage(bill, shop));
+  });
+});
+
+describe("billMessage with quantities", () => {
+  it("shows quantity x rate for items bought more than once", () => {
+    const withQty = {
+      ...bill,
+      bill_items: [{ id: "1", bill_id: "b1", position: 0, description: "Spark plug", quantity: 4, price: 180, line_total: 720 }],
+    };
+    expect(billMessage(withQty, shop)).toContain("1. Spark plug: 4 × ₹180.00 = ₹720.00");
   });
 });

@@ -85,8 +85,8 @@ describe("validateBill", () => {
         discount_percent: null,
       },
       items: [
-        { description: "Brake pads", price: "1250.00" },
-        { description: "Engine oil 3L", price: "899.50" },
+        { description: "Brake pads", quantity: "1.00", price: "1250.00" },
+        { description: "Engine oil 3L", quantity: "1.00", price: "899.50" },
       ],
       complaintIds: [],
     });
@@ -158,7 +158,7 @@ describe("billToDraft", () => {
       grand_total: 2100.5,
       created_at: "",
       updated_at: "",
-      bill_items: [{ id: "x", bill_id: "b1", position: 0, description: "Brake pads", price: 1250 }],
+      bill_items: [{ id: "x", bill_id: "b1", position: 0, description: "Brake pads", quantity: 1, price: 1250, line_total: 1250 }],
       complaints: [{ id: "c1", complaint_number: 3, description: "Brake noise", status: "open", attended_by: null, reported_on: "2026-10-14" }],
     };
     const d = billToDraft(saved);
@@ -231,5 +231,29 @@ describe("discount", () => {
     });
     expect(d.discount).toEqual({ mode: "percent", value: "10" });
     expect(d.deliveredOn).toBe("2026-10-15");
+  });
+});
+
+describe("quantity", () => {
+  it("multiplies quantity by unit price, rounding to the paisa", () => {
+    const d = filled({ items: [newItem("Spark plug", "180", "4"), newItem("Engine oil (litre)", "433.33", "1.5")] });
+    // 4 x 180 = 720.00; 1.5 x 433.33 = 649.995 -> 650.00
+    expect(computeTotals(d).itemsSubtotal).toBe(72000 + 65000);
+    expect(validateBill(d, strict).payload?.items).toEqual([
+      { description: "Spark plug", quantity: "4.00", price: "180.00" },
+      { description: "Engine oil (litre)", quantity: "1.50", price: "433.33" },
+    ]);
+  });
+
+  it("treats a blank quantity as 1 and rejects zero or nonsense", () => {
+    expect(validateBill(filled({ items: [newItem("Bulb", "50", "")] }), strict).payload?.items[0].quantity).toBe("1.00");
+    const zero = newItem("Bulb", "50", "0");
+    expect(validateBill(filled({ items: [zero] }), strict).errors[`item-${zero.key}-quantity`]).toMatch(/above 0/);
+    const junk = newItem("Bulb", "50", "two");
+    expect(validateBill(filled({ items: [junk] }), strict).errors[`item-${junk.key}-quantity`]).toBeTruthy();
+  });
+
+  it("starts new rows at 1", () => {
+    expect(newItem().quantity).toBe("1");
   });
 });

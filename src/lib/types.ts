@@ -29,7 +29,12 @@ export interface BillItemRow {
   bill_id: string;
   position: number;
   description: string;
+  /** How many (default 1). */
+  quantity: number;
+  /** Price for one. */
   price: number;
+  /** quantity x price. */
+  line_total: number;
 }
 
 export type ComplaintStatus = "open" | "resolved";

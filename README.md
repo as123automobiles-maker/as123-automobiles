@@ -26,6 +26,7 @@ Built with React, TypeScript, Vite and Supabase (Postgres plus Auth).
    - `supabase/migrations/0007_staff_tracking.sql`
    - `supabase/migrations/0008_usernames.sql`
    - `supabase/migrations/0009_delivery_and_discount.sql`
+   - `supabase/migrations/0010_item_quantity.sql`
 
    Run each file only once.
 3. **Create the owner login.** Open **Authentication → Users → Add user → Create new user**, enter your email and a password, and tick **Auto Confirm User**. If you create it *before* running `0003_staff.sql`, that migration makes the earliest login the **Owner**. If you create it *after*, add it to the staff list in the SQL Editor:

@@ -7,6 +7,9 @@ export { normalizeVehicleReg, todayISO } from "./customer";
 export interface ItemDraft {
   key: string;
   description: string;
+  /** How many; decimals allowed (e.g. 1.5 litres). */
+  quantity: string;
+  /** Price for one. */
   price: string;
 }
 
@@ -37,9 +40,9 @@ export interface BillDraft extends CustomerFields {
 }
 
 let keySeq = 0;
-export function newItem(description = "", price = ""): ItemDraft {
+export function newItem(description = "", price = "", quantity = "1"): ItemDraft {
   keySeq += 1;
-  return { key: `i${Date.now().toString(36)}${keySeq}`, description, price };
+  return { key: `i${Date.now().toString(36)}${keySeq}`, description, quantity, price };
 }
 
 export function emptyBill(): BillDraft {
@@ -89,9 +92,22 @@ export function discountPaise(discount: DiscountDraft, gross: number): number {
   return p.paise;
 }
 
+/** Quantity in hundredths ("1.5" -> 150), or null if not a valid quantity above 0. */
+export function parseQuantity(raw: string): number | null {
+  const p = parseAmount(raw.trim() === "" ? "1" : raw);
+  if (!p.ok || p.paise === 0 || p.paise > 9999_00) return null;
+  return p.paise;
+}
+
+/** Line amount in paise: quantity x unit price, rounded to the paisa (same as the database). */
+export function lineTotal(item: ItemDraft): number {
+  const qty = parseQuantity(item.quantity) ?? 100;
+  return Math.round((paiseOrZero(item.price) * qty) / 100);
+}
+
 /** Live totals in paise. Amounts that aren't valid yet count as 0. */
 export function computeTotals(d: BillDraft): Totals {
-  const itemsSubtotal = d.items.reduce((sum, item) => sum + paiseOrZero(item.price), 0);
+  const itemsSubtotal = d.items.reduce((sum, item) => sum + lineTotal(item), 0);
   const labour = paiseOrZero(d.labour);
   const painting = d.painting.selected ? paiseOrZero(d.painting.amount) : 0;
   const washing = d.washing.selected ? paiseOrZero(d.washing.amount) : 0;
@@ -116,7 +132,7 @@ export interface SaveBillPayload {
     discount: string;
     discount_percent: string | null;
   };
-  items: { description: string; price: string }[];
+  items: { description: string; quantity: string; price: string }[];
   complaintIds: string[];
 }
 
@@ -156,10 +172,13 @@ export function validateBill(
     const description = item.description.trim();
     if (!description) errors[`item-${item.key}-description`] = "Describe the part or work.";
     else if (description.length > 200) errors[`item-${item.key}-description`] = "Too long (200 characters max).";
+    const qty = parseQuantity(item.quantity);
+    if (qty === null) errors[`item-${item.key}-quantity`] = "Enter a quantity above 0, e.g. 1 or 1.5.";
     const price = parseAmount(item.price);
     const priceError = amountMessage(price, "price");
     if (priceError) errors[`item-${item.key}-price`] = priceError;
-    if (description && price.ok) items.push({ description, price: paiseToDecimal(price.paise) });
+    if (description && price.ok && qty !== null)
+      items.push({ description, quantity: (qty / 100).toFixed(2), price: paiseToDecimal(price.paise) });
   }
 
   const labour = parseAmount(d.labour);
@@ -223,7 +242,7 @@ export function validateBill(
 export function billToDraft(bill: BillWithItems): BillDraft {
   const items = [...bill.bill_items]
     .sort((a, b) => a.position - b.position)
-    .map((i) => newItem(i.description, paiseToInput(rupeesToPaise(i.price))));
+    .map((i) => newItem(i.description, paiseToInput(rupeesToPaise(i.price)), String(Number(i.quantity ?? 1))));
   return {
     customerName: bill.customer_name,
     address: bill.address ?? "",

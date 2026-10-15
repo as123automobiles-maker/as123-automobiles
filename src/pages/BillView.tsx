@@ -134,13 +134,15 @@ export default function BillView() {
             <tr>
               <th className="col-no">#</th>
               <th>Item or service</th>
-              <th className="num">Price</th>
+              <th className="col-qty">Qty</th>
+              <th className="num">Rate</th>
+              <th className="num">Amount</th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 ? (
               <tr>
-                <td colSpan={3} className="muted">
+                <td colSpan={5} className="muted">
                   No parts or items recorded.
                 </td>
               </tr>
@@ -149,7 +151,9 @@ export default function BillView() {
                 <tr key={item.id}>
                   <td className="col-no">{i + 1}</td>
                   <td>{item.description}</td>
+                  <td className="col-qty">{Number(item.quantity ?? 1)}</td>
                   <td className="num">{inr(item.price)}</td>
+                  <td className="num">{inr(item.line_total ?? item.price)}</td>
                 </tr>
               ))
             )}

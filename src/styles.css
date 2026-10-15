@@ -2102,3 +2102,47 @@ h3 {
 .mismatch-line .btn {
   margin-left: 6px;
 }
+
+/* ---------- Item rows with quantity ---------- */
+
+.item-row {
+  grid-template-columns: 28px 76px 1fr 44px;
+  grid-template-areas:
+    "no desc desc remove"
+    "no qty price remove";
+}
+
+.item-qty {
+  grid-area: qty;
+}
+
+.qty-input {
+  text-align: center;
+}
+
+.line-total {
+  margin: 4px 2px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: right;
+}
+
+@media (min-width: 640px) {
+  .items-head {
+    grid-template-columns: 28px 1fr 80px 170px 44px;
+  }
+  .items-head span:nth-child(2),
+  .items-head span:nth-child(3) {
+    text-align: center;
+  }
+  .item-row {
+    grid-template-columns: 28px 1fr 80px 170px 44px;
+    grid-template-areas: "no desc qty price remove";
+  }
+}
+
+.bill-items .col-qty {
+  width: 4.5em;
+  text-align: center;
+}

@@ -4,6 +4,8 @@ import { saveBill } from "../lib/api";
 import {
   computeTotals,
   isBlankItem,
+  lineTotal,
+  parseQuantity,
   newItem,
   validateBill,
   type BillDraft,
@@ -41,7 +43,7 @@ function firstErrorKey(errors: BillErrors, d: BillDraft): string | null {
     "dateReceived",
     "expectedPickup",
     "deliveredOn",
-    ...d.items.flatMap((i) => [`item-${i.key}-description`, `item-${i.key}-price`]),
+    ...d.items.flatMap((i) => [`item-${i.key}-description`, `item-${i.key}-quantity`, `item-${i.key}-price`]),
     "labour",
     "painting",
     "washing",
@@ -207,12 +209,15 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
         <p className="hint">Add every part replaced and every job done. Empty rows are ignored.</p>
         <div className="items-head" aria-hidden="true">
           <span>Item or service</span>
-          <span>Price</span>
+          <span>Qty</span>
+          <span>Price (each)</span>
         </div>
         <ol className="items">
           {draft.items.map((item, index) => {
             const descKey = `item-${item.key}-description`;
             const priceKey = `item-${item.key}-price`;
+            const qtyKey = `item-${item.key}-quantity`;
+            const qty = parseQuantity(item.quantity);
             return (
               <li key={item.key} className="item-row">
                 <span className="item-no" aria-hidden="true">
@@ -232,11 +237,33 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        setFocusKey(priceKey);
+                        setFocusKey(qtyKey);
                       }
                     }}
                   />
                   <FieldError fieldKey={descKey} error={shown[descKey]} />
+                </div>
+                <div className="item-qty">
+                  <label className="sr-only" htmlFor={`f-${qtyKey}`}>
+                    Item {index + 1} quantity
+                  </label>
+                  <input
+                    {...fieldProps(qtyKey, shown[qtyKey])}
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    className="qty-input"
+                    value={item.quantity}
+                    onChange={(e) => setItem(item.key, { quantity: e.target.value })}
+                    onFocus={(e) => e.target.select()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        setFocusKey(priceKey);
+                      }
+                    }}
+                  />
+                  <FieldError fieldKey={qtyKey} error={shown[qtyKey]} />
                 </div>
                 <div className="item-price">
                   <label className="sr-only" htmlFor={`f-${priceKey}`}>
@@ -250,6 +277,9 @@ export default function BillForm({ initial, title, billId, onChange, onSaved, ba
                     onKeyDown={(e) => onPriceKeyDown(e, index)}
                   />
                   <FieldError fieldKey={priceKey} error={shown[priceKey]} />
+                  {qty !== null && qty !== 100 && item.price.trim() !== "" && (
+                    <p className="line-total">= {formatINR(lineTotal(item))}</p>
+                  )}
                 </div>
                 <button
                   type="button"

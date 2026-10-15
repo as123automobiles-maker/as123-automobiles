@@ -36,6 +36,7 @@ function loadDraft(): BillDraft | null {
     // Drafts saved by older versions lack newer fields.
     if (looksValid && !Array.isArray(d.complaintIds)) d.complaintIds = [];
     if (looksValid && typeof d.deliveredOn !== "string") d.deliveredOn = emptyBill().deliveredOn;
+    if (looksValid) d.items = d.items.map((i) => ({ ...i, quantity: typeof i.quantity === "string" ? i.quantity : "1" }));
     if (looksValid && (typeof d.discount !== "object" || d.discount === null)) d.discount = emptyBill().discount;
     return looksValid && hasContent(d) ? d : null;
   } catch {
