@@ -4,7 +4,7 @@ A simple, mobile-friendly web app for an automobile workshop to create, save, se
 
 - **New bill:** customer and vehicle details, any number of parts or work items (free text and price), a required labour charge, and optional painting and washing. Totals update as you type.
 - **Complaints:** record what the customer reports (free text), the date, who attended them, notes, and status (Open / Resolved). Enter the vehicle number first; if the vehicle has been seen before, the app offers to fill in the customer's details.
-- **Bills ↔ complaints:** when creating or editing a bill, tick which of that vehicle's complaints the work addresses. This is optional, and a bill can address several complaints. A complaint can also have several bills.
+- **Bills ↔ complaints:** when creating or editing a bill, tick which of that vehicle's complaints the work addresses. This is optional, and a bill can address several complaints. A complaint can also have several bills. Saving the bill marks its complaints **Resolved**; if a bill is edited to untick a complaint that no other bill covers, it goes back to **Open**.
 - **Find bills:** one search box that matches customer name, phone number or vehicle number. It shows matching bills (with the complaints each addresses), matching complaints (with who attended and their bills), and shortcuts to each vehicle's history.
 - **Vehicle history:** complaints and bills for one vehicle, together in date order. Filters show **complaints without a bill** and **bills without a complaint**.
 - **Print / Save PDF:** a clean printable bill with your workshop's name, address and phone.
@@ -21,6 +21,8 @@ Built with React, TypeScript, Vite and Supabase (Postgres plus Auth).
    - `supabase/migrations/0002_bills.sql`
    - `supabase/migrations/0003_staff.sql`
    - `supabase/migrations/0004_complaints.sql`
+   - `supabase/migrations/0005_attended_by_required.sql`
+   - `supabase/migrations/0006_resolve_on_bill.sql`
 
    Run each file only once.
 3. **Create the owner login.** Open **Authentication → Users → Add user → Create new user**, enter your email and a password, and tick **Auto Confirm User**. If you create it *before* running `0003_staff.sql`, that migration makes the earliest login the **Owner**. If you create it *after*, add it to the staff list in the SQL Editor:

@@ -64,7 +64,10 @@ export default function ComplaintPicker({ customer, selected, onChange, billId }
   return (
     <section className="card">
       <h2>Complaints this bill fixes</h2>
-      <p className="hint">Optional. Tick the customer's complaints that this work addresses.</p>
+      <p className="hint">
+        Optional. Tick the customer's complaints that this work addresses. Ticked complaints are marked{" "}
+        <strong>Resolved</strong> when you save the bill.
+      </p>
 
       {load.status === "idle" && <p className="muted">Enter the vehicle number above to see complaints for that vehicle.</p>}
       {load.status === "loading" && <p className="muted">Looking for complaints for {key}…</p>}
