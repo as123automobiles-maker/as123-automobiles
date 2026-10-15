@@ -1651,3 +1651,124 @@ h3 {
   border-top: 2px solid var(--text);
   border-bottom: 0;
 }
+
+/* ---------- Signed-in pages use the sign-in screen's palette ---------- */
+
+.app {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Fixed backdrop (background-attachment: fixed is unreliable on phones). */
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(249, 115, 22, 0.22), transparent 38%),
+    linear-gradient(140deg, #0f1f4b 0%, #1e3a8a 60%, #2350d8 100%);
+}
+
+.app .topbar {
+  background: rgba(10, 22, 56, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Text sitting directly on the blue background is light... */
+.app .container {
+  --muted: #b9c6ea;
+  color: #fff;
+}
+
+/* ...while anything on a white surface keeps the normal dark text. */
+.app .card,
+.app .result,
+.app .alert:not(.alert-error):not(.alert-success),
+.app .modal,
+.app .savebar,
+.app .tile,
+.app .segmented,
+.app .chart-tip {
+  --muted: #5b6577;
+  color: var(--text);
+}
+
+.app .tile-strong {
+  color: #fff;
+}
+
+.app .container > .page-status,
+.app .results-heading,
+.app .result-section > h2,
+.app .vehicle-links > h2 {
+  color: #c9d5f2;
+}
+
+.app .back-link {
+  color: #dbe4ff;
+}
+
+.app .back-link:hover {
+  color: #fff;
+}
+
+.app .card {
+  border-color: transparent;
+  box-shadow: 0 10px 30px rgba(5, 12, 40, 0.25);
+}
+
+.app .result {
+  border-color: transparent;
+}
+
+.app .result:hover {
+  border-color: #b9c8f5;
+}
+
+.app .result-complaint {
+  border-left-color: var(--accent);
+}
+
+/* Filter chips on the blue background */
+.app .chip {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.app .chip:hover {
+  border-color: #fff;
+}
+
+.app .chip-active {
+  background: #fff;
+  border-color: #fff;
+  color: var(--nav-bg);
+}
+
+.app .chip-active .muted {
+  color: var(--muted);
+}
+
+.app .chip-attention:not(.chip-active) .chip-count {
+  color: #ffc58f;
+}
+
+.app .segmented {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+@media print {
+  .app::before {
+    display: none;
+  }
+  .app .container {
+    color: #000;
+  }
+  .app .card {
+    box-shadow: none;
+  }
+}
